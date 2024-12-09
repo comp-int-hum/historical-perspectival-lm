@@ -7,12 +7,12 @@ from steamroller import Environment
 vars = Variables("custom.py")
 vars.AddVariables(
 
-    # Guttenberg data
+    # Gutenberg data
     ("DATA_ROOT", "", os.path.expanduser("~/corpora")),
     ("GUTENBERG_PATH", "", "${DATA_ROOT}/gutenberg/"),
     ("PG_CATALOG", "", "data/pg_catalog.csv"),
 
-    # SPARQL Query
+    # SPARQL query
     ("SPARQL_QUERY","", "data/en_authors.txt"),
     
     # Filter settings
