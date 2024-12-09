@@ -22,4 +22,5 @@ training:
   gradient_accumulation_steps: 16
   warmup_steps: 300
   fp16: True
+  gpus: "0, 1"
 

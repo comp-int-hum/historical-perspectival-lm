@@ -117,7 +117,7 @@ if __name__ == "__main__":
                 self._move_model_to_device(teacher, self.model.device)
                 teacher.eval()
 
-        def compute_loss(self, model, inputs, return_outputs=False):
+        def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=0):
             # compute student output
             outputs_student = model(**inputs)
             student_loss = outputs_student.loss

@@ -20,7 +20,8 @@ vars.AddVariables(
     ("P2_THRESH", "", 92), #similarity threshold for pass 2 of fuzzy matching, used alone
     ("BD_THRESH", "", 5), #allowed birthdate delta
     ("OMIT_AUTHORS","",["Herman Melville"]), #temporary measure to omit a given author, uses WD authorname
-    ("MAX_WORKS","", 3), #maximum number of works per author for data balancing purposes
+    # TODO: max works is 1 to reduce token numbers for preliminary training
+    ("MAX_WORKS","", 1), #maximum number of works per author for data balancing purposes
     ("FOLDS", "", 1),
 
     # SLURM settings
@@ -32,9 +33,11 @@ vars.AddVariables(
     ("WORK_DIR", "", "work"),
 
     # Data Split settings
-    ("TRAIN_PORTION", "", 0.7),
+    # TODO: change splits back to 0.7, 0.1, 0.2
+    ("TRAIN_PORTION", "", 0.25),
     ("DEV_PORTION", "", 0.1),
-    ("TEST_PORTION", "", 0.2),
+    ("TEST_PORTION", "", 0.65),
+    ("SPLIT_LEVEL", "", "chapter"), # can be sentence, paragraph, or chapter
 
     # Random Seed
     ("RANDOM_SEED", "", 42),
@@ -44,8 +47,8 @@ vars.AddVariables(
     ("WANDB_PROJECT", "", "BabyLlama_1"),
 
     # Training
-    ("TRAINER_CONFIG_1", "", "config/gpt-705M.yaml"),
-    ("TRAINER_CONFIG_2", "", "config/llama-360M.yaml"),
+    ("TRAINER_CONFIG_1", "", "config/llama-360M.yaml"),
+    ("TRAINER_CONFIG_2", "", "config/gpt-705M.yaml"),
     ("STUDENT_CONFIG", "", "config/llama-58M.yaml")
 )
 
@@ -89,9 +92,8 @@ env = Environment(
                 "--train_portion ${TRAIN_PORTION} "
                 "--dev_portion ${DEV_PORTION} "
                 "--test_portion ${TEST_PORTION} "
-                "--random_seed ${RANDOM_SEED}"
-
-
+                "--random_seed ${RANDOM_SEED} "
+                "--split_level ${SPLIT_LEVEL}"
             )
         ),
         "TrainTokenizer" : Builder(
@@ -110,6 +112,7 @@ env = Environment(
             )
         ),
         "TrainTeacher" : Builder(
+            interpreter = "accelerate launch",
             action = (
                 "python scripts/train_teacher.py "
                 "--train_data ${SOURCES[0]} "
@@ -140,7 +143,19 @@ env = Environment(
                 "--wandb_name ${WANDB_NAME} "
                 "--output_dir ${TARGET}"
             )
+        ),
+        "Evaluate" : Builder(
+            action = (
+                "python scripts/evaluate.py "
+                "--test_data ${SOURCES[0]} "
+                "--tokenizer_path ${SOURCES[1]} "
+                "--teacher_dir_1 ${SOURCES[2]} "
+                "--teacher_dir_2 ${SOURCES[3]} "
+                "--student_dir ${SOURCES[4]} "
+                "--report ${TARGET}"
+            )
         )
+
     }
 )
 
@@ -184,21 +199,26 @@ teacher_1 = env.TrainTeacher(
     source = [train_data, dev_data, tokenizer],
     target = Dir(f"{env['WORK_DIR']}/teacher_1"),
     CONFIG = env["TRAINER_CONFIG_1"],
-    WANDB_NAME = "Teacher_1"
+    WANDB_NAME = f"Teacher_1_{env['TRAINER_CONFIG_1'].split('/')[-1].split('.')[0]}"
 )
 
 teacher_2 = env.TrainTeacher(
     source = [train_data, dev_data, tokenizer],
     target = Dir(f"{env['WORK_DIR']}/teacher_2"),
     CONFIG = env["TRAINER_CONFIG_2"],
-    WANDB_NAME = "Teacher_1"
+    WANDB_NAME = f"Teacher_2_{env['TRAINER_CONFIG_2'].split('/')[-1].split('.')[0]}"
 )
 
 student = env.DistillTrainStudent(
     source = [train_data, dev_data, tokenizer, teacher_1, teacher_2],
     target = Dir(f"{env['WORK_DIR']}/student"),
     CONFIG = env["STUDENT_CONFIG"],
-    WANDB_NAME = "Student"
+    WANDB_NAME = f"Student_{env['STUDENT_CONFIG'].split('/')[-1].split('.')[0]}"
+)
+
+env.Evaluate(
+    source = [dev_data, tokenizer, teacher_1, teacher_2, student],
+    target = "${WORK_DIR}/evaluation_report.txt"
 )
 
 

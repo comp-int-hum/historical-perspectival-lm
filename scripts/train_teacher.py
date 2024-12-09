@@ -21,7 +21,7 @@ if __name__ == "__main__":
     parser.add_argument("--eval_data", type=str, default=None, help="Path to the evaluation data")
     parser.add_argument("--tokenizer_path", type=str, default=None, help="Path to the tokenizer")
     # model parameters
-    parser.add_argument("--config", type=str, default="./config/llama-16M.yaml", help="Configuration file path")
+    parser.add_argument("--config", type=str, default="./config/llama-360M.yaml", help="Configuration file path")
     parser.add_argument("--lr", type=float, default=None, help="Learning rate")
     parser.add_argument("--random_seed", type=int, default=None, help="Random seed")
     # wandb arguments
@@ -46,6 +46,14 @@ if __name__ == "__main__":
     # in the original code I had random_chunk = False
     # random_chunk=True is expected to improve the model performance a bit
     train_dataset = GBDataset(args.train_data, config['data']['seq_length'], random_chunk=True)
+
+    if config['training'].get('gpus', None) is not None:
+        import os
+        os.environ["CUDA_VISIBLE_DEVICES"] = config['training']['gpus']
+    #TODO: change back
+    print(f"using {config['training']['gpus']} GPUs")
+    train_tokens = len(train_dataset) * config['data']['seq_length']
+    print(f"train_tokens = {train_tokens/10**6}M")
     full_eval_dataset = GBDataset(args.eval_data, config['data']['seq_length'], offset=0)
 
     
