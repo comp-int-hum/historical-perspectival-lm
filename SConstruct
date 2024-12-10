@@ -154,8 +154,14 @@ env = Environment(
                 "--student_dir ${SOURCES[4]} "
                 "--report ${TARGET}"
             )
+        ),
+        "BLIMP" : Builder(
+            action = (
+                "python scripts/start_blimp.py "
+                "--model_dir ${SOURCES} "
+                "--output ${TARGET}"
+            )
         )
-
     }
 )
 
@@ -221,5 +227,17 @@ env.Evaluate(
     target = "${WORK_DIR}/evaluation_report.txt"
 )
 
+env.BLIMP(
+    source = student,
+    target = "${WORK_DIR}/student_eval/blimp_results.json"
+)
 
+env.BLIMP(
+    source = teacher_1,
+    target = "${WORK_DIR}/teacher_1_eval/blimp_results.json"
+)
 
+env.BLIMP(
+    source = teacher_2,
+    target = "${WORK_DIR}/teacher_2_eval/blimp_results.json"
+)
