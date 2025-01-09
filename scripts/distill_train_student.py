@@ -39,7 +39,7 @@ if __name__ == "__main__":
     # output
     parser.add_argument("--output_dir", help="Path to the output directory")
     
-    parser.add_argument("--limit_train", type=int, default=None, help="Limit the training data")
+    parser.add_argument("--limit_train", type=int, default=10000000, help="Limit the training data")
     args, rest = parser.parse_known_args()
 
 
@@ -65,6 +65,7 @@ if __name__ == "__main__":
             intermediate_size=config['model']['intermediate_size'],
             num_hidden_layers=config['model']['n_layer'],
             num_attention_heads=config['model']['n_head'],
+            num_key_value_heads=config['model'].get('n_KV', config['model']['n_head']),
             tie_word_embeddings=config['model'].get('tie_word_embeddings', False),
             pad_token_id=tokenizer.convert_tokens_to_ids("<pad>"),
         )

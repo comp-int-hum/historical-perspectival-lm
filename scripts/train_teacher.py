@@ -31,7 +31,7 @@ if __name__ == "__main__":
     # output
     parser.add_argument("--output_dir", type=str, default=None, help="Path to the output directory")
 
-    parser.add_argument("--limit_train", type=int, default=None, help="Limit the training data")
+    parser.add_argument("--limit_train", type=int, default=10000000, help="Limit the training data")
     args = parser.parse_args()
 
     with open(args.config, 'r') as f:
@@ -84,8 +84,10 @@ if __name__ == "__main__":
             intermediate_size=config['model']['intermediate_size'],
             num_hidden_layers=config['model']['n_layer'],
             num_attention_heads=config['model']['n_head'],
+            num_key_value_heads=config['model'].get('num_key_value_heads', config['model']['n_head']),
             tie_word_embeddings=config['model'].get('tie_word_embeddings', False),
             pad_token_id=tokenizer.convert_tokens_to_ids("<pad>"),
+            attention_dropout=config['model'].get('attention_dropout', 0.0),
         )
         model = LlamaForCausalLM(model_config)
     elif config['model']['type'] == "GPT2":
@@ -133,6 +135,7 @@ if __name__ == "__main__":
         num_train_epochs=config['training']['num_epochs'],
         gradient_accumulation_steps=accumulation_steps,
         per_device_train_batch_size=per_device_bsz,
+        per_device_eval_batch_size=per_device_bsz,
         save_total_limit=1,  # Set to zero to avoid saving
         warmup_steps=config['training']['warmup_steps'], 
         lr_scheduler_type="cosine",

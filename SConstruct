@@ -47,9 +47,9 @@ vars.AddVariables(
     ("WANDB_PROJECT", "", "BabyLlama_1"),
 
     # Training
-    ("TRAINER_CONFIG_1", "", "config/llama-360M.yaml"),
-    ("TRAINER_CONFIG_2", "", "config/gpt-705M.yaml"),
-    ("STUDENT_CONFIG", "", "config/llama-58M.yaml")
+    ("TRAINER_CONFIG_1", "", "config/llama-smoll-345M.yaml"),
+    ("TRAINER_CONFIG_2", "", "config/llama-smoll-345M.yaml"),
+    ("STUDENT_CONFIG", "", "config/llama-smoll-345M.yaml")
 )
 
 env = Environment(
@@ -248,7 +248,7 @@ env.BLIMP(
     source = teacher_2,
     target = "${WORK_DIR}/teacher_2_eval/blimp/blimp_results.json"
 )
-
+"""
 env.SuperGLUE(
     source = student,
     target = "${WORK_DIR}/student_eval/super_glue/eval_results.json"
@@ -262,4 +262,4 @@ env.SuperGLUE(
 env.SuperGLUE(
     source = teacher_2,
     target = "${WORK_DIR}/teacher_2_eval/super_glue/eval_results.json"
-)
+)"""

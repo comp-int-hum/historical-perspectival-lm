@@ -1,0 +1,25 @@
+data:
+  seq_length: 128
+  eval_samples: 8192
+
+model:
+  type: "Llama"
+  name: "SmolLlama-345M"
+  hidden_size: 960
+  intermediate_size: 2560
+  n_layer: 32
+  n_head: 15
+  n_KV: 5
+
+training:
+  lr: 7e-4
+  weight_decay: 5.0
+  batch_size: 128
+  num_epochs: 8
+  gradient_accumulation_steps: 4
+  warmup_steps: 600
+  fp16: True
+  torch_compile: True
+  alpha: 0.5
+  temperature: 1.0
+  gpus: "1"
