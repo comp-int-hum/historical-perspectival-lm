@@ -39,6 +39,7 @@ if __name__ == "__main__":
     # output
     parser.add_argument("--output_dir", help="Path to the output directory")
     
+    parser.add_argument("--limit_train", type=int, default=None, help="Limit the training data")
     args, rest = parser.parse_known_args()
 
 
@@ -75,6 +76,11 @@ if __name__ == "__main__":
     # random_chunk=True is expected to improve the model performance a bit
     train_dataset = GBDataset(args.train_data, config['data']['seq_length'], random_chunk=True)
     full_eval_dataset = GBDataset(args.eval_data, config['data']['seq_length'], offset=0)
+
+    token_count = len(train_dataset) * config['data']['seq_length']
+    if token_count > args.limit_train:
+        train_indices = sample(range(len(train_dataset)), args.limit_train // config['data']['seq_length'])
+        train_dataset = Subset(train_dataset, train_indices)
 
     eval_indices = sample(range(len(full_eval_dataset)), config['data']['eval_samples'])
     eval_dataset = Subset(full_eval_dataset, eval_indices)

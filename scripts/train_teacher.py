@@ -30,6 +30,8 @@ if __name__ == "__main__":
     parser.add_argument("--wandb_name", type=str, default=None, help="Wandb run name")
     # output
     parser.add_argument("--output_dir", type=str, default=None, help="Path to the output directory")
+
+    parser.add_argument("--limit_train", type=int, default=None, help="Limit the training data")
     args = parser.parse_args()
 
     with open(args.config, 'r') as f:
@@ -54,6 +56,9 @@ if __name__ == "__main__":
     print(f"using {config['training']['gpus']} GPUs")
     train_tokens = len(train_dataset) * config['data']['seq_length']
     print(f"train_tokens = {train_tokens/10**6}M")
+    if train_tokens > args.limit_train:
+        train_indices = sample(range(len(train_dataset)), args.limit_train // config['data']['seq_length'])
+        train_dataset = Subset(train_dataset, train_indices)
     full_eval_dataset = GBDataset(args.eval_data, config['data']['seq_length'], offset=0)
 
     
