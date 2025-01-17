@@ -16,13 +16,17 @@ vars.AddVariables(
     ("SPARQL_QUERY","", "data/en_authors.txt"),
     
     # Filter settings
+    ("WORK_CUTOFF", "", 1849),
     ("P1_THRESH", "", 90), #similarity threshold for pass 1 of fuzzy matching, paried with bd_thresh
-    ("P2_THRESH", "", 92), #similarity threshold for pass 2 of fuzzy matching, used alone
+    ("P2_THRESH", "", 101), #similarity threshold for pass 2 of fuzzy matching, used alone
     ("BD_THRESH", "", 5), #allowed birthdate delta
     ("OMIT_AUTHORS","",["Herman Melville"]), #temporary measure to omit a given author, uses WD authorname
     # TODO: max works is 1 to reduce token numbers for preliminary training
-    ("MAX_WORKS","", 1), #maximum number of works per author for data balancing purposes
+    ("MAX_WORKS","", 3), #maximum number of works per author for data balancing purposes
     ("FOLDS", "", 1),
+    #work date filter inference settings
+    ("WORK_MODEL", "", "meta-llama/Llama-3.3-70B-Instruct"),
+    ("WORK_PROMPT", "", "data/work_date_prompt.txt"),
 
     # SLURM settings
     ("CPU_QUEUE", "", "some_queue"),
@@ -58,12 +62,22 @@ env = Environment(
         "QueryWD" : Builder(
               action="python scripts/author_gather_metadata.py --sparql ${SOURCES} --output ${TARGETS}"
 	    ),
-	    "GBAuthorFuzzy": Builder(
+	"GBAuthorFuzzy": Builder(
 	      action="python scripts/author_gb_fuzzy.py "
 	             "--input ${SOURCES} --output ${TARGETS} "
 		     "--pg_catalog ${PG_CATALOG} "
 		     "--author_omit ${OMIT_AUTHORS} "
-		     "--p1_thresh ${P1_THRESH} --p2_thresh ${P2_THRESH} --bd_thresh ${BD_THRESH} --max_works ${MAX_WORKS} --random_state ${RANDOM_SEED}"
+		     "--p1_thresh ${P1_THRESH} --p2_thresh ${P2_THRESH} --bd_thresh ${BD_THRESH} --random_state ${RANDOM_SEED}"
+        ),
+        "AttributeDates": Builder(
+            action="python scripts/work_dates.py "
+            "--input ${SOURCES} --output ${TARGETS} "
+            "--model ${WORK_MODEL} --prompt ${WORK_PROMPT} --quant_4"
+        ),
+        "FilterAndSampleWorks": Builder(
+            action="python scripts/sample_works.py "
+            "--input ${SOURCES} --output ${TARGETS} "
+            "--cutoff ${WORK_CUTOFF} --max_works ${MAX_WORKS} --filter_birth_death"
         ),
 
         "ExtractAuthorWorksFromPG" : Builder(
@@ -179,8 +193,13 @@ query_res = env.QueryWD(source = input, target = "${WORK_DIR}/author_query.jsonl
 
 gb_authors = env.GBAuthorFuzzy(source = query_res, target = "${WORK_DIR}/gb_authors.jsonl")
 
+gb_authors_dates = env.AttributeDates(source = gb_authors, target = "${WORK_DIR}/gb_authors_dates.jsonl")
+
+filtered_authors = env.FilterAndSampleWorks(source = gb_authors_dates, target =  "${WORK_DIR}/gb_authors_dates_filtered.jsonl")
+
+
 authors_and_extracted_works = env.ExtractAuthorWorksFromPG(
-    source = gb_authors,
+    source = filtered_authors,
     target = "${WORK_DIR}/authors_and_extracted_works.jsonl"
 )
 
@@ -205,7 +224,7 @@ for data_split in train_dev_test:
         source = [data_split, tokenizer],
         target = str(data_split) + ".pt"
 ))
-
+"""
 train_data, dev_data, test_data = tokenized_train_dev_test
 
 teacher_1 = env.TrainTeacher(
@@ -248,7 +267,7 @@ env.BLIMP(
     source = teacher_2,
     target = "${WORK_DIR}/teacher_2_eval/blimp/blimp_results.json"
 )
-"""
+
 env.SuperGLUE(
     source = student,
     target = "${WORK_DIR}/student_eval/super_glue/eval_results.json"
@@ -262,4 +281,5 @@ env.SuperGLUE(
 env.SuperGLUE(
     source = teacher_2,
     target = "${WORK_DIR}/teacher_2_eval/super_glue/eval_results.json"
-)"""
+)
+"""

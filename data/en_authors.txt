@@ -1,11 +1,11 @@
-SELECT DISTINCT  ?birthDate ?author ?authorLabel
-    WHERE
-    {
-       {?author wdt:P106 wd:Q482980 .} UNION {?author wdt:P106 wd:Q36180 .}
-       ?author wdt:P6886 wd:Q1860 .
-       ?author wdt:P569 ?birthDate FILTER (?birthDate <
-    "1835-01-01T00:00:00Z"^^xsd:dateTime) .
-        SERVICE wikibase:label {
-    bd:serviceParam wikibase:language "en".
+ SELECT DISTINCT  ?birthDate ?deathDate ?author ?authorLabel   
+WHERE
+{
+     {?author wdt:P106 wd:Q482980 .} UNION {?author wdt:P106 wd:Q36180 .}
+     ?author wdt:P6886 wd:Q1860 .
+     ?author wdt:P569 ?birthDate FILTER (?birthDate < "1835-01-01T00:00:00Z"^^xsd:dateTime) .
+     OPTIONAL { ?author wdt:P570 ?deathDate. }
+     SERVICE wikibase:label {                                                                                                                                                          
+     	     bd:serviceParam wikibase:language "en".
   }
-    } ORDER BY ?birthDate
+ } ORDER BY ?birthDate 

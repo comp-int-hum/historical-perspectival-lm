@@ -16,7 +16,7 @@ if __name__ == "__main__":
     parser.add_argument("--p1_thresh", type=int, default=90, help="Pass 1 similarity threshold")
     parser.add_argument("--p2_thresh", type=int, default=92, help="Pass 2 similarity threshold")
     parser.add_argument("--bd_thresh", type=int, default=5, help="Pass 1 birthday delta threshold")
-    parser.add_argument("--max_works", type=int, default=1000, help="Maximum numbers of work/author")
+    #parser.add_argument("--max_works", type=int, default=1000, help="Maximum numbers of work/author")
     parser.add_argument("--author_omit", nargs="+", default=[], help="Temporary author disable using WD name")
     parser.add_argument("--random_state", type=int, default=29)
     args, rest = parser.parse_known_args()
@@ -101,15 +101,15 @@ if __name__ == "__main__":
         n = 0
         n_w = 0
         print("Omitting authors: {}".format(args.author_omit))
-        print("Sampling a maximum of {} works per author".format(args.max_works))
+        #print("Sampling a maximum of {} works per author".format(args.max_works))
         for author in pass_1+pass_2:
             if author["gb_author"] not in seen and author["authorLabel"]["value"] not in args.author_omit:
                 seen.append(author["gb_author"])
                 n+=1
                 #max works logic
-                n_sample = args.max_works if args.max_works <= len(author["gb_works"]) else len(author["gb_works"])
-                new_works = random.sample(sorted(author["gb_works"]), n_sample)
-                author["gb_works"] = {name: author["gb_works"][name] for name in new_works}
+                #n_sample = args.max_works if args.max_works <= len(author["gb_works"]) else len(author["gb_works"])
+                #new_works = random.sample(sorted(author["gb_works"]), n_sample)
+                #author["gb_works"] = {name: author["gb_works"][name] for name in new_works}
                 n_w += len(author["gb_works"])
                 s_o.write(json.dumps(author)+"\n")
         print("Final result of {} authors and {} Gids".format(n, n_w))
