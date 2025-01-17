@@ -48,7 +48,7 @@ vars.AddVariables(
 
     # Wandb settings
     ("USE_WANDB", "", False),
-    ("WANDB_PROJECT", "", "BabyLlama_1"),
+    ("WANDB_PROJECT", "", "BabyLlama_2"),
 
     # Training
     ("TRAINER_CONFIG_1", "", "config/llama-smoll-345M.yaml"),

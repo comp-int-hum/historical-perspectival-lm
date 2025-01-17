@@ -68,6 +68,7 @@ if __name__ == "__main__":
             num_key_value_heads=config['model'].get('n_KV', config['model']['n_head']),
             tie_word_embeddings=config['model'].get('tie_word_embeddings', False),
             pad_token_id=tokenizer.convert_tokens_to_ids("<pad>"),
+            attention_dropout=config['model'].get('attention_dropout', 0.0)
         )
         student = LlamaForCausalLM(model_config)
     else:
