@@ -15,11 +15,11 @@ training:
   lr: 7e-4
   weight_decay: 5.0
   batch_size: 128
-  num_epochs: 8
+  num_epochs: 1
   gradient_accumulation_steps: 4
   warmup_steps: 600
   fp16: True
   torch_compile: True
   alpha: 0.5
   temperature: 1.0
-  gpus: "1"
+  gpus: "0"

@@ -25,6 +25,7 @@ vars.AddVariables(
     ("MAX_WORKS","", 3), #maximum number of works per author for data balancing purposes
     ("FOLDS", "", 1),
     #work date filter inference settings
+    ("USE_INFERENCE", "", False), # use inference to filter works and determined work creation dates
     ("WORK_MODEL", "", "meta-llama/Llama-3.3-70B-Instruct"),
     ("WORK_PROMPT", "", "data/work_date_prompt.txt"),
 
@@ -176,6 +177,13 @@ env = Environment(
                 "--output ${TARGET}"
             )
         ),
+        "EWOK" : Builder(
+            action = (
+                "python scripts/start_ewok.py "
+                "--model_dir ${SOURCES} "
+                "--output ${TARGET}"
+            )
+        ),
         "SuperGLUE" : Builder(
             action = (
                 "python scripts/start_glue.py "
@@ -193,13 +201,13 @@ query_res = env.QueryWD(source = input, target = "${WORK_DIR}/author_query.jsonl
 
 gb_authors = env.GBAuthorFuzzy(source = query_res, target = "${WORK_DIR}/gb_authors.jsonl")
 
-gb_authors_dates = env.AttributeDates(source = gb_authors, target = "${WORK_DIR}/gb_authors_dates.jsonl")
-
-filtered_authors = env.FilterAndSampleWorks(source = gb_authors_dates, target =  "${WORK_DIR}/gb_authors_dates_filtered.jsonl")
-
+if env["USE_INFERENCE"]:
+    gb_authors_dates = env.AttributeDates(source = gb_authors, target = "${WORK_DIR}/gb_authors_dates.jsonl")
+    filtered_authors = env.FilterAndSampleWorks(source = gb_authors_dates, target =  "${WORK_DIR}/gb_authors_dates_filtered.jsonl")
+    gb_authors = filtered_authors
 
 authors_and_extracted_works = env.ExtractAuthorWorksFromPG(
-    source = filtered_authors,
+    source = gb_authors, # filtered_authors
     target = "${WORK_DIR}/authors_and_extracted_works.jsonl"
 )
 
@@ -224,7 +232,7 @@ for data_split in train_dev_test:
         source = [data_split, tokenizer],
         target = str(data_split) + ".pt"
 ))
-"""
+
 train_data, dev_data, test_data = tokenized_train_dev_test
 
 teacher_1 = env.TrainTeacher(
@@ -268,6 +276,21 @@ env.BLIMP(
     target = "${WORK_DIR}/teacher_2_eval/blimp/blimp_results.json"
 )
 
+env.EWOK(
+    source = student,
+    target = "${WORK_DIR}/student_eval/ewok/ewok_results.json"
+)
+
+env.EWOK(
+    source = teacher_1,
+    target = "${WORK_DIR}/teacher_1_eval/ewok/ewok_results.json"
+)
+
+env.EWOK(
+    source = teacher_2,
+    target = "${WORK_DIR}/teacher_2_eval/ewok/ewok_results.json"
+)
+"""
 env.SuperGLUE(
     source = student,
     target = "${WORK_DIR}/student_eval/super_glue/eval_results.json"
