@@ -16,7 +16,7 @@ vars.AddVariables(
     ("SPARQL_QUERY","", "data/en_authors.txt"),
     
     # Filter settings
-    ("WORK_CUTOFF", "", 1849),
+    ("WORK_CUTOFF", "", 1849), #set to None for no workdate attribution/filtering (leaving it only to authordate)
     ("P1_THRESH", "", 90), #similarity threshold for pass 1 of fuzzy matching, paried with bd_thresh
     ("P2_THRESH", "", 101), #similarity threshold for pass 2 of fuzzy matching, used alone
     ("BD_THRESH", "", 5), #allowed birthdate delta
@@ -38,11 +38,11 @@ vars.AddVariables(
 
     # Data Split settings
     # TODO: change splits back to 0.7, 0.1, 0.2
-    ("TRAIN_PORTION", "", 0.25),
-    ("DEV_PORTION", "", 0.1),
-    ("TEST_PORTION", "", 0.65),
-    ("SPLIT_LEVEL", "", "chapter"), # can be sentence, paragraph, or chapter
-
+    ("TRAIN_PORTION", "", 10000000),
+    ("DEV_PORTION", "", 1000000),
+    ("TEST_PORTION", "", 5000000),
+    ("SPLIT_STYLE", "", "count"), #percent or count
+    ("SPLIT_LEVEL", "", "paragraph"), # can be sentence, paragraph, or chapter.
     # Random Seed
     ("RANDOM_SEED", "", 42),
 
@@ -96,6 +96,7 @@ env = Environment(
 				"--output ${TARGETS}"
 			)
 		),
+
         "TrainingSplit" : Builder(
             action = (
                 "python scripts/train_test_val.py "
@@ -107,9 +108,12 @@ env = Environment(
                 "--dev_portion ${DEV_PORTION} "
                 "--test_portion ${TEST_PORTION} "
                 "--random_seed ${RANDOM_SEED} "
-                "--split_level ${SPLIT_LEVEL}"
+                "--split_level ${SPLIT_LEVEL} "
+		"--split_style ${SPLIT_STYLE}"
             )
         ),
+
+
         "TrainTokenizer" : Builder(
             action = (
                 "python scripts/train_tokenizer.py "
@@ -122,7 +126,7 @@ env = Environment(
                 "python scripts/tokenize_split.py "
                 "--input ${SOURCES[0]} "
                 "--tokenizer ${SOURCES[1]} "
-                "--output ${TARGETS} "
+                "--output ${TARGETS}"
             )
         ),
         "TrainTeacher" : Builder(
@@ -193,9 +197,10 @@ query_res = env.QueryWD(source = input, target = "${WORK_DIR}/author_query.jsonl
 
 gb_authors = env.GBAuthorFuzzy(source = query_res, target = "${WORK_DIR}/gb_authors.jsonl")
 
-gb_authors_dates = env.AttributeDates(source = gb_authors, target = "${WORK_DIR}/gb_authors_dates.jsonl")
+if env["WORK_CUTOFF"]:
+   gb_authors = env.AttributeDates(source = gb_authors, target = "${WORK_DIR}/gb_authors_dates.jsonl")
 
-filtered_authors = env.FilterAndSampleWorks(source = gb_authors_dates, target =  "${WORK_DIR}/gb_authors_dates_filtered.jsonl")
+filtered_authors = env.FilterAndSampleWorks(source = gb_authors, target = "${WORK_DIR}/gb_authors_dates_filtered.jsonl")
 
 
 authors_and_extracted_works = env.ExtractAuthorWorksFromPG(
@@ -208,9 +213,12 @@ extracted_structures = env.ExtractDocStructures(
 	target = "${WORK_DIR}/extracted_structures.jsonl"
 )
 
+#explicitly specify N tokens reserved for train from each work based on target overall train token number
+#eg we want 10000000 train tokens, each work contributes N, the rest can be used for test and dev
+
 train_dev_test = env.TrainingSplit(
-    source = extracted_structures,
-    target = ["${WORK_DIR}/data.train", "${WORK_DIR}/data.dev", "${WORK_DIR}/data.test"]
+	source = extracted_structures,
+	target = ["${WORK_DIR}/data.train", "${WORK_DIR}/data.dev", "${WORK_DIR}/data.test"]
 )
 
 tokenizer = env.TrainTokenizer(
