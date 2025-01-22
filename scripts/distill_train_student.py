@@ -13,11 +13,14 @@ import torch.nn.functional as F
 from torch.utils.data import  Subset
 from random import sample
 import yaml
+import torch
 
 from pathlib import Path
 import wandb
 import argparse
 from gb_dataloader import GBDataset
+import gc
+from distill_utils import DistillationTrainer, DistillationTrainingArguments
 
 
 if __name__ == "__main__":
@@ -43,9 +46,26 @@ if __name__ == "__main__":
     args, rest = parser.parse_known_args()
 
 
+    
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    gc.collect()
+    print(torch.cuda.memory_summary())
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
     
+    """if config['training'].get('gpus', None) is not None:
+        import os
+        print(f"previously using {os.environ.get('CUDA_VISIBLE_DEVICES', None)}")
+        print(f"using {config['training']['gpus']} GPUs")
+        os.environ["CUDA_VISIBLE_DEVICES"] = config['training']['gpus']
+        print(f"now using {os.environ.get('CUDA_VISIBLE_DEVICES', None)}")
+        print(torch.cuda.current_device())
+        torch.cuda.set_device(1)
+        print(torch.cuda.current_device())"""
+
+        
+
     tokenizer_path = args.tokenizer_path
     tokenizer = GPT2TokenizerFast(tokenizer_file= str(tokenizer_path))
     tokenizer.bos_token = "<s>"
@@ -89,7 +109,7 @@ if __name__ == "__main__":
 
 
     teacher1 = LlamaForCausalLM.from_pretrained(args.teacher_dir_1)
-    teacher2 = GPT2LMHeadModel.from_pretrained(args.teacher_dir_2)
+    teacher2 = LlamaForCausalLM.from_pretrained(args.teacher_dir_2)
     teachers = [teacher1, teacher2]
 
 
@@ -101,58 +121,6 @@ if __name__ == "__main__":
     print(f'model num parameters: student = {student.num_parameters()}')
     print(f'model num parameters: teacher1 = {teacher1.num_parameters()}')
     print(f'model num parameters: teacher2 = {teacher2.num_parameters()}')
-
-
-
-    #  Distillation Trainer
-    #  We modified the Trainer from this repo https://github.com/philschmid/knowledge-distillation-transformers-pytorch-sagemaker
-    # to work with an ensemble of teachers
-
-
-    class DistillationTrainingArguments(TrainingArguments):
-        def __init__(self, *args, alpha=0.5, temperature=2.0, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.alpha = alpha
-            self.temperature = temperature
-
-
-    class DistillationTrainer(Trainer):
-        def __init__(self, *args, teacher_models=None, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.teachers = teacher_models
-            for teacher in self.teachers:
-                # place each teacher on same device as student
-                self._move_model_to_device(teacher, self.model.device)
-                teacher.eval()
-
-        def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=0):
-            # compute student output
-            outputs_student = model(**inputs)
-            student_loss = outputs_student.loss
-
-            # compute teacher output
-            with torch.no_grad():
-                all_teacher_logits = []
-                for teacher in self.teachers:
-                    outputs_teacher = teacher(**inputs)
-                    all_teacher_logits.append(outputs_teacher.logits)
-                avg_teacher_logits = torch.stack(all_teacher_logits).mean(dim=0)
-
-            # assert size
-            assert outputs_student.logits.size() == avg_teacher_logits.size()
-
-            # Soften probabilities and compute distillation loss
-            loss_function = nn.KLDivLoss(reduction="batchmean")
-            loss_logits = (
-                loss_function(
-                    F.log_softmax(outputs_student.logits / self.args.temperature, dim=-1),
-                    F.softmax(avg_teacher_logits / self.args.temperature, dim=-1),
-                )
-                * (self.args.temperature ** 2)
-            )
-            # Return weighted student loss
-            loss = self.args.alpha * student_loss + (1.0 - self.args.alpha) * loss_logits
-            return (loss, outputs_student) if return_outputs else loss
 
 
     if args.use_wandb:

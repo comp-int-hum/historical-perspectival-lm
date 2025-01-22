@@ -29,7 +29,7 @@ if __name__ == "__main__":
     print(args)
 
     teacher1 = LlamaForCausalLM.from_pretrained(args.teacher_dir_1)
-    teacher2 = GPT2LMHeadModel.from_pretrained(args.teacher_dir_2)
+    teacher2 = LlamaForCausalLM.from_pretrained(args.teacher_dir_2)
     student = LlamaForCausalLM.from_pretrained(args.student_dir)
 
     # TODO fix this
