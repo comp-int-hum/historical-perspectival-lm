@@ -21,6 +21,8 @@ import argparse
 from gb_dataloader import GBDataset
 import gc
 from distill_utils import DistillationTrainer, DistillationTrainingArguments
+import glob
+import shutil
 
 
 if __name__ == "__main__":
@@ -171,3 +173,7 @@ if __name__ == "__main__":
 
     trainer.save_model(args.output_dir)
     tokenizer.save_pretrained(args.output_dir)
+
+    checkpoints = glob.glob(os.path.join(output_dir, "checkpoint-*"))
+    for checkpoint in checkpoints:
+        shutil.rmtree(checkpoint, ignore_errors=True)

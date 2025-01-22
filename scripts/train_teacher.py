@@ -13,6 +13,8 @@ import argparse
 import wandb
 from gb_dataloader import GBDataset
 import torch
+import glob
+import shutil
 
 
 if __name__ == "__main__":
@@ -162,3 +164,7 @@ if __name__ == "__main__":
     trainer.train()
     trainer.save_model(output_dir)
     tokenizer.save_pretrained(output_dir)
+
+    checkpoints = glob.glob(os.path.join(output_dir, "checkpoint-*"))
+    for checkpoint in checkpoints:
+        shutil.rmtree(checkpoint, ignore_errors=True)
