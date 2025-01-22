@@ -26,6 +26,8 @@ vars.AddVariables(
     ("FOLDS", "", 1),
     #work date filter inference settings
     ("USE_INFERENCE", "", False), # use inference to filter works and determined work creation dates
+    ("USE_DATES_FILE", "", True),
+    ("DATES_FILE","", "data/gb_authors_dates.jsonl"), #used if USE_DATES_FILE is True
     ("WORK_MODEL", "", "meta-llama/Llama-3.3-70B-Instruct"),
     ("WORK_PROMPT", "", "data/work_date_prompt.txt"),
 
@@ -198,18 +200,20 @@ env = Environment(
     }
 )
 
+if not env["USE_DATES_FILE"]:
+   input = env.File(env["SPARQL_QUERY"])
 
-input = env.File(env["SPARQL_QUERY"])
+   query_res = env.QueryWD(source = input, target = "${WORK_DIR}/author_query.jsonl")
 
-query_res = env.QueryWD(source = input, target = "${WORK_DIR}/author_query.jsonl")
-
-gb_authors = env.GBAuthorFuzzy(source = query_res, target = "${WORK_DIR}/gb_authors.jsonl")
+   gb_authors = env.GBAuthorFuzzy(source = query_res, target = "${WORK_DIR}/gb_authors.jsonl")
 
 
-if env["USE_INFERENCE"]:
-    gb_authors_dates = env.AttributeDates(source = gb_authors, target = "${WORK_DIR}/gb_authors_dates.jsonl")
-    filtered_authors = env.FilterAndSampleWorks(source = gb_authors_dates, target =  "${WORK_DIR}/gb_authors_dates_filtered.jsonl")
-    gb_authors = filtered_authors
+   if env["USE_INFERENCE"]:
+      gb_authors_dates = env.AttributeDates(source = gb_authors, target = "${WORK_DIR}/gb_authors_dates.jsonl")
+      filtered_authors = env.FilterAndSampleWorks(source = gb_authors_dates, target =  "${WORK_DIR}/gb_authors_dates_filtered.jsonl")
+      gb_authors = filtered_authors
+else:
+	gb_authors = env.File(env["DATES_FILE"])
 
 authors_and_extracted_works = env.ExtractAuthorWorksFromPG(
     source = gb_authors, # filtered_authors
