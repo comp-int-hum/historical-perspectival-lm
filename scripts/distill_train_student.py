@@ -23,6 +23,7 @@ import gc
 from distill_utils import DistillationTrainer, DistillationTrainingArguments
 import glob
 import shutil
+import os
 
 
 if __name__ == "__main__":

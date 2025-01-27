@@ -16,7 +16,8 @@ vars.AddVariables(
     ("SPARQL_QUERY","", "data/en_authors.txt"),
     
     # Filter settings
-    ("WORK_CUTOFF", "", 1849), #set to None for no workdate attribution/filtering (leaving it only to authordate)
+    ("WORK_CUTOFF_START", "", -9999), #set to None for no workdate attribution/filtering (leaving it only to authordate)
+    ("WORK_CUTOFF_END", "", 1849), #set to None for no workdate attribution/filtering (leaving it only to authordate)
     ("P1_THRESH", "", 90), #similarity threshold for pass 1 of fuzzy matching, paried with bd_thresh
     ("P2_THRESH", "", 101), #similarity threshold for pass 2 of fuzzy matching, used alone
     ("BD_THRESH", "", 5), #allowed birthdate delta
@@ -37,7 +38,7 @@ vars.AddVariables(
     ("GPU_QUEUE", "", "another_queue"),
     ("GPU_ACCOUNT", "", "another_account"),
     ("GPU_COUNT", "", 1),
-    ("WORK_DIR", "", "work"),
+    ("WORK_DIR", "", "work_with_data"),
 
     # Data Split settings
     # TODO: change splits back to 0.7, 0.1, 0.2
@@ -65,7 +66,7 @@ env = Environment(
         "QueryWD" : Builder(
               action="python scripts/author_gather_metadata.py --sparql ${SOURCES} --output ${TARGETS}"
 	    ),
-	"GBAuthorFuzzy": Builder(
+	    "GBAuthorFuzzy": Builder(
 	      action="python scripts/author_gb_fuzzy.py "
 	             "--input ${SOURCES} --output ${TARGETS} "
 		     "--pg_catalog ${PG_CATALOG} "
@@ -80,7 +81,8 @@ env = Environment(
         "FilterAndSampleWorks": Builder(
             action="python scripts/sample_works.py "
             "--input ${SOURCES} --output ${TARGETS} "
-            "--cutoff ${WORK_CUTOFF} --max_works ${MAX_WORKS} --filter_birth_death"
+            "--cutoff_START ${WORK_CUTOFF_START} "
+            "--cutoff_END ${WORK_CUTOFF_END} --max_works ${MAX_WORKS} --filter_birth_death"
         ),
 
         "ExtractAuthorWorksFromPG" : Builder(
@@ -176,6 +178,13 @@ env = Environment(
                 "--report ${TARGET}"
             )
         ),
+        "BLIMP_to_CSV" : Builder(
+            action = (
+                "python scripts/blimp_to_csv.py "
+                "--blimp_directories ${SOURCES} "
+                "--output_directory ${TARGET}"
+            )
+        ),
         "BLIMP" : Builder(
             action = (
                 "python scripts/start_blimp.py "
@@ -196,7 +205,8 @@ env = Environment(
                 "--model_dir ${SOURCES} "
                 "--output ${TARGET}"
             )
-        )
+        ),
+        
     }
 )
 
@@ -213,7 +223,9 @@ if not env["USE_DATES_FILE"]:
       filtered_authors = env.FilterAndSampleWorks(source = gb_authors_dates, target =  "${WORK_DIR}/gb_authors_dates_filtered.jsonl")
       gb_authors = filtered_authors
 else:
-	gb_authors = env.File(env["DATES_FILE"])
+    gb_authors = env.File(env["DATES_FILE"])
+    gb_authors = env.FilterAndSampleWorks(source = gb_authors, target =  "${WORK_DIR}/gb_authors_dates_filtered.jsonl")
+
 
 authors_and_extracted_works = env.ExtractAuthorWorksFromPG(
     source = gb_authors, # filtered_authors
@@ -273,20 +285,26 @@ env.Evaluate(
     target = "${WORK_DIR}/evaluation_report.txt"
 )
 
-env.BLIMP(
+blimp_student = env.BLIMP(
     source = student,
     target = "${WORK_DIR}/student_eval/blimp/blimp_results.json"
 )
 
-env.BLIMP(
+blimp_teacher_1 = env.BLIMP(
     source = teacher_1,
     target = "${WORK_DIR}/teacher_1_eval/blimp/blimp_results.json"
 )
 
-env.BLIMP(
+blimp_teacher_2 = env.BLIMP(
     source = teacher_2,
     target = "${WORK_DIR}/teacher_2_eval/blimp/blimp_results.json"
 )
+
+env.BLIMP_to_CSV(
+    source = [blimp_student, blimp_teacher_1, blimp_teacher_2],
+    target = Dir("${WORK_DIR}/combined_BLIMP")
+)
+
 
 env.EWOK(
     source = student,
