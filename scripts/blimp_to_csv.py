@@ -91,6 +91,7 @@ def merge_dataframes(dfs, prefixes):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--blimp_directories", nargs="+", help="Directories containing the blimp files")
+    parser.add_argument("--blimp_identifiers", nargs="+", help="Identifiers for the blimp files")
     parser.add_argument("--output_directory", type=str, help="Output directory")
     args = parser.parse_args()
 
@@ -104,9 +105,8 @@ if __name__ == "__main__":
     print(args.blimp_results)
     data = {}
     directory_identifiers = []
-    for directory in args.blimp_results:
-        directory_id = directory.split("/")[-2]
-        directory_id = directory_id.replace("_eval", "")
+    for directory, identifier in zip(args.blimp_directories, args.blimp_identifiers):
+        directory_id = identifier
         files = glob.glob(f"{directory}/*.jsonl") + glob.glob(f"{directory}/*.json")
         for file in tqdm(files):
             file_id = file.split("/")[-1].split(".")[0]
