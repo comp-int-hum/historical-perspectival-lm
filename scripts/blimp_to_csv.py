@@ -26,7 +26,7 @@ def extract_data(file):
             "one_prefix_method": doc.get("one_prefix_method"),
             "two_prefix_method": doc.get("two_prefix_method"),
             "lexically_identical": doc.get("lexically_identical"),
-            "pair_id": doc.get("pair_id"),
+            "pair_id": doc.get("pairID") if "pairID" in doc else doc.get("pair_id"),
             "target": entry.get("target"),
             "acc": entry.get("acc"),
             # Store nested structures as strings if needed
@@ -103,9 +103,11 @@ if __name__ == "__main__":
 
     args.blimp_results = ["/".join(result.split("/")[:-1]) for result in args.blimp_directories]
     print(args.blimp_results)
+    print(args.blimp_directories)
+    print(args.blimp_identifiers)
     data = {}
     directory_identifiers = []
-    for directory, identifier in zip(args.blimp_directories, args.blimp_identifiers):
+    for directory, identifier in zip(args.blimp_results, args.blimp_identifiers):
         directory_id = identifier
         files = glob.glob(f"{directory}/*.jsonl") + glob.glob(f"{directory}/*.json")
         for file in tqdm(files):
