@@ -41,8 +41,8 @@ vars.AddVariables(
     ("GPU_QUEUE", "", "another_queue"),
     ("GPU_ACCOUNT", "", "another_account"),
     ("GPU_COUNT", "", 1),
-    ("ORIGINAL_WORK_DIR", "", "work"),
-    ("WORK_DIR", "", "work"),
+    ("ORIGINAL_WORK_DIR", "", "work_times"),
+    ("WORK_DIR", "", "work_times"),
 
     # Data Split settings
     # TODO: change splits back to 0.7, 0.1, 0.2
@@ -205,8 +205,8 @@ env = Environment(
         "FILTER_BLIMP" : Builder(
             action = (
                 "python scripts/filter_blimp.py "
-                "--data ${SOURCES[0]} "
-                "--blimp_dir ${SOURCES[1]} "
+                "--data ${SOURCES[1:]} "
+                "--blimp_dir ${SOURCES[0]} "
                 "--min_occurrence ${MIN_OCCURRENCE_BLIMP} "
                 "--output ${TARGET} "
             )
@@ -249,6 +249,8 @@ else:
 
 
 blimp_results = []
+all_models = []
+all_training_sets = []
 
 for time_slice in env["TIME_SLICES"]:
     env["WORK_DIR"] = env["ORIGINAL_WORK_DIR"] + "/" + str(time_slice[0]) + "_" + str(time_slice[1])
@@ -271,6 +273,8 @@ for time_slice in env["TIME_SLICES"]:
         source = extracted_structures,
         target = ["${WORK_DIR}/data.train", "${WORK_DIR}/data.dev", "${WORK_DIR}/data.test"]
     )
+
+    all_training_sets.extend(train_dev_test[0])
 
     tokenizer = env.TrainTokenizer(
         source = train_dev_test[0],
@@ -313,43 +317,38 @@ for time_slice in env["TIME_SLICES"]:
     )
 
     filtered_blimp = env.FILTER_BLIMP(
-        source = [train_dev_test[0], Dir("evaluation-pipeline-2024/evaluation_data/blimp")],
+        source = [Dir("evaluation-pipeline-2024/evaluation_data/blimp"), train_dev_test[0]],
         target = "${WORK_DIR}/filtered_blimp/adjunct_island.jsonl"
     )
 
-    blimp_filtered_student = env.BLIMP(
-        source = [student, filtered_blimp],
-        target = "${WORK_DIR}/student_eval/blimp_filtered/blimp_results.json"
+    models = [(student, "student"), (teacher_1, "teacher_1"), (teacher_2, "teacher_2")]
+    all_models.extend([ (student, f"student_{time_slice[0]}_{time_slice[1]}"), 
+                        (teacher_1, f"teacher_1_{time_slice[0]}_{time_slice[1]}"), 
+                        (teacher_2, f"teacher_2_{time_slice[0]}_{time_slice[1]}")])
+
+    for model, name in models:
+        blimp = env.BLIMP(
+            source = [model, filtered_blimp],
+            target = f"{env['WORK_DIR']}/{name}_eval/blimp_filtered/blimp_results.json"
+        )
+        blimp_results.append((blimp, f"{name}_{time_slice[0]}_{time_slice[1]}"))
+
+        eval.EWOK(
+            source = model,
+            target = f"{env['WORK_DIR']}/{name}_eval/ewok/ewok_results.json"
+        )
+
+most_filtered_blimp = env.FILTER_BLIMP(
+        source = [Dir("evaluation-pipeline-2024/evaluation_data/blimp")] + all_training_sets,
+        target = "${WORK_DIR}/most_filtered_blimp/adjunct_island.jsonl"
     )
 
-    blimp_filtered_teacher_1 = env.BLIMP(
-        source = [teacher_1, filtered_blimp],
-        target = "${WORK_DIR}/teacher_1_eval/blimp_filtered/blimp_results.json"
+for model, name in all_models:
+    blimp = env.BLIMP(
+        source = [model, most_filtered_blimp],
+        target = f"{env['WORK_DIR']}/{name}_eval/blimp_filtered/blimp_results.json"
     )
-
-    blimp_filtered_teacher_2 = env.BLIMP(
-        source = [teacher_2, filtered_blimp],
-        target = "${WORK_DIR}/teacher_2_eval/blimp_filtered/blimp_results.json"
-    )
-
-    blimp_results.extend([(blimp_filtered_student, f"student_filtered_{time_slice[0]}_{time_slice[1]}"),
-                          (blimp_filtered_teacher_1, f"teacher_1_filtered_{time_slice[0]}_{time_slice[1]}"),
-                          (blimp_filtered_teacher_2, f"teacher_2_filtered_{time_slice[0]}_{time_slice[1]}")])
-
-    env.EWOK(
-        source = student,
-        target = "${WORK_DIR}/student_eval/ewok/ewok_results.json"
-    )
-
-    env.EWOK(
-        source = teacher_1,
-        target = "${WORK_DIR}/teacher_1_eval/ewok/ewok_results.json"
-    )
-
-    env.EWOK(
-        source = teacher_2,
-        target = "${WORK_DIR}/teacher_2_eval/ewok/ewok_results.json"
-    )
+    blimp_results.append((blimp, f"{name}_most_filtered"))
 
 all_blimp = [x[0] for x in blimp_results]
 all_identifiers = [x[1] for x in blimp_results]
