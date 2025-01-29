@@ -274,7 +274,7 @@ for time_slice in env["TIME_SLICES"]:
         target = ["${WORK_DIR}/data.train", "${WORK_DIR}/data.dev", "${WORK_DIR}/data.test"]
     )
 
-    all_training_sets.extend(train_dev_test[0])
+    all_training_sets.append(train_dev_test[0])
 
     tokenizer = env.TrainTokenizer(
         source = train_dev_test[0],
@@ -333,7 +333,7 @@ for time_slice in env["TIME_SLICES"]:
         )
         blimp_results.append((blimp, f"{name}_{time_slice[0]}_{time_slice[1]}"))
 
-        eval.EWOK(
+        env.EWOK(
             source = model,
             target = f"{env['WORK_DIR']}/{name}_eval/ewok/ewok_results.json"
         )
