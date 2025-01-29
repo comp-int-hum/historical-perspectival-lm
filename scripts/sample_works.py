@@ -15,8 +15,10 @@ if __name__ == "__main__":
     parser.add_argument("--random_state", type=int, default=29)
     args, rest = parser.parse_known_args()
 
-    random.seed(args.random_state)
+    print(args)
 
+    random.seed(args.random_state)
+    error_count = 0
     n_works = 0
     n_authors = 0
     with open(args.input, "rt") as s_in, open(args.output, "wt") as s_o:
@@ -26,7 +28,7 @@ if __name__ == "__main__":
             for work, gid in jline["gb_works"].items():
                 if args.cutoff_end and args.cutoff_start:
                     try:
-                        valid_end = int(jline["work_dates"][gid]) <= args.cutoff_end
+                        valid_end = int(jline["work_dates"][gid]) < args.cutoff_end
                         valid_start = int(jline["work_dates"][gid]) >= args.cutoff_start
                         valid_birth = True
                         if args.filter_birth_death:
@@ -36,7 +38,8 @@ if __name__ == "__main__":
                         if valid_end and valid_start and valid_birth:
                             new_works[work]=gid                
                     except ValueError:
-                        print("Value Error: {}".format(jline["work_dates"][gid]))
+                        error_count += 1
+                        #print("Value Error: {}".format(jline["work_dates"][gid]))
                         continue
                 else:
                     new_works[work]=gid
@@ -50,7 +53,7 @@ if __name__ == "__main__":
                 if args.cutoff_end and args.cutoff_start:
                     jline["work_dates"] = {gid: jline["work_dates"][gid] for gid in jline["gb_works"].values()}
                 s_o.write(json.dumps(jline)+"\n")
-                
+    print("Work date attribution format errors: {}".format(error_count))
     print("Gathered {} works from {} authors".format(n_works, n_authors))
 
                         
