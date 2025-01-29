@@ -27,8 +27,8 @@ vars.AddVariables(
     ("TIME_SLICES", "", [(1750, 1800), (1800, 1850), (1850, 1900), (1900, 1950)]),
     #work date filter inference settings
     ("USE_INFERENCE", "", True), # use inference to filter works and determined work creation dates
-    ("USE_DATES_FILE", "", False),
-    ("DATES_FILE","", "data/gb_authors_dates.jsonl"), #used if USE_DATES_FILE is True
+    ("USE_DATES_FILE", "", True),
+    ("DATES_FILE","", "data/gb_authors_dates_1950.jsonl"), #used if USE_DATES_FILE is True
     ("WORK_MODEL", "", "meta-llama/Llama-3.3-70B-Instruct"),
     ("WORK_PROMPT", "", "data/work_date_prompt.txt"),
 
