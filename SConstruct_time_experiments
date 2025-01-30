@@ -1,5 +1,6 @@
 import os
 import os.path
+import json
 
 from steamroller import Environment
 
@@ -23,7 +24,7 @@ vars.AddVariables(
     ("MAX_WORKS","", 20), #maximum number of works per author for data balancing purposes
     ("FOLDS", "", 1),
     # Time settings
-    ("TIME_SLICES", "", [(1750, 1820)]), #, (1820, 1850), (1850, 1880), (1880, 1910), (1910, 1940)]),
+    ("TIME_SLICES", "", [(1750, 1820), (1820, 1850), (1850, 1880), (1880, 1910), (1910, 1940)]),
     #work date filter inference settings
     ("USE_INFERENCE", "", True), # use inference to filter works and determined work creation dates
     ("USE_DATES_FILE", "", True),
@@ -359,13 +360,13 @@ for time_slice in env["TIME_SLICES"]:
     filtered_blimp = env.FILTER_BLIMP(
         source = [Dir("evaluation-pipeline-2024/evaluation_data/blimp"), train_dev_test[0]],
         target = "${WORK_DIR}/filtered_blimp/adjunct_island.jsonl",
-        **cpu_task_config("FILTER_BLIMP", "00:30:00", "24GB")
+        **cpu_task_config("FILTER_BLIMP", "00:30:00", "80GB")
     )
 
     models = [(student, "student"), (teacher_1, "teacher_1"), (teacher_2, "teacher_2")]
-    all_models.extend([ (student, f"student_{time_slice[0]}_{time_slice[1]}"), 
-                        (teacher_1, f"teacher_1_{time_slice[0]}_{time_slice[1]}"), 
-                        (teacher_2, f"teacher_2_{time_slice[0]}_{time_slice[1]}")])
+    all_models.extend([ (student, f"student", env["WORK_DIR"]), 
+                        (teacher_1, f"teacher_1", env["WORK_DIR"]), 
+                        (teacher_2, f"teacher_2", env["WORK_DIR"])])
 
     for model, name in models:
         blimp = env.BLIMP(
@@ -383,17 +384,17 @@ for time_slice in env["TIME_SLICES"]:
 
 most_filtered_blimp = env.FILTER_BLIMP(
         source = [Dir("evaluation-pipeline-2024/evaluation_data/blimp")] + all_training_sets,
-        target = "${WORK_DIR}/most_filtered_blimp/adjunct_island.jsonl",
-        **cpu_task_config("FILTER_BLIMP", "00:30:00", "24GB")
+        target = "${ORIGINAL_WORK_DIR}/most_filtered_blimp/adjunct_island.jsonl",
+        **cpu_task_config("FILTER_BLIMP", "00:30:00", "80GB")
     )
 
-for model, name in all_models:
+for model, name, work_dir in all_models:
     blimp = env.BLIMP(
         source = [model, most_filtered_blimp],
-        target = f"{env['WORK_DIR']}/{name}_eval/blimp_filtered/blimp_results.json",
-        **gpu_task_config("BLIMP", "01:30:00", "24GB")
+        target = f"{work_dir}/{name}_eval/blimp_filtered/blimp_results.json",
+        **gpu_task_config("BLIMP_most", "01:30:00", "24GB")
     )
-    blimp_results.append((blimp, f"{name}_most_filtered"))
+    blimp_results.append((blimp, f"{work_dir}/{name}_most_filtered"))
 
 all_blimp = [x[0] for x in blimp_results]
 all_identifiers = [x[1] for x in blimp_results]

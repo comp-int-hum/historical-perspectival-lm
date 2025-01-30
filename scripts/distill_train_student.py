@@ -155,6 +155,7 @@ if __name__ == "__main__":
         weight_decay=float(config['training']['weight_decay']),
         alpha=float(config['training']['alpha']),
         temperature=float(config['training']['temperature']),
+        save_only_model=True,
     )
 
 

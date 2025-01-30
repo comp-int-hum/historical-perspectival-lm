@@ -147,6 +147,7 @@ if __name__ == "__main__":
         load_best_model_at_end=True,
         metric_for_best_model="eval_loss",
         torch_compile = config['training'].get('torch_compile', False),
+        save_only_model=True,
     )
 
     trainer = Trainer(
@@ -162,9 +163,10 @@ if __name__ == "__main__":
         wandb.init(project= args.wandb_project, name=args.wandb_name, config=config)
 
     trainer.train()
-    trainer.save_model(output_dir)
-    tokenizer.save_pretrained(output_dir)
 
     checkpoints = glob.glob(os.path.join(output_dir, "checkpoint-*"))
     for checkpoint in checkpoints:
         shutil.rmtree(checkpoint, ignore_errors=True)
+
+    trainer.save_model(output_dir)
+    tokenizer.save_pretrained(output_dir)

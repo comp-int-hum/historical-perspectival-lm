@@ -1,5 +1,4 @@
 import argparse
-import subprocess
 import os
 import shutil
 import json
@@ -30,6 +29,8 @@ if __name__ == "__main__":
                 word_dictionary[word] += 1
         word_dictionaries.append(word_dictionary)
     
+    
+    
     # merge the word dictionaries so that the min count is kept
     min_word_dictionary = word_dictionaries[0]
     for word_dictionary in word_dictionaries:
@@ -39,16 +40,15 @@ if __name__ == "__main__":
             min_word_dictionary[word] = min(min_word_dictionary[word], count)
     word_dictionary = min_word_dictionary
     
-
+    
     args.output = os.path.dirname(args.output)
-    # clear the output directory
-    if os.path.exists(args.output):
-        shutil.rmtree(args.output)
 
-    os.makedirs(args.output, exist_ok=True)
-
+    
     words_that_caused_error = {}
     for file in os.listdir(args.blimp_dir):
+        # empty the output file
+        if os.path.exists(os.path.join(args.output, file)):
+            os.remove(os.path.join(args.output, file))
         # file is a jsonl file
         for line in open(os.path.join(args.blimp_dir, file), "r"):
             line = json.loads(line)
