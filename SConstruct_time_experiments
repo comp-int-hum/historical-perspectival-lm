@@ -234,6 +234,16 @@ env = Environment(
                 "--output ${TARGET}"
             )
         ),
+        "CrossTimePerplexity" : Builder(
+            action = (
+                "python scripts/cross_time_perplexity.py "
+                "--models ${MODELS} "
+                "--test_sets ${TEST_SETS} "
+                "--tokenizers ${TOKENIZERS} "
+                "--time_data ${TIME_DATA} "
+                "--output ${TARGET}"
+            )
+        ),
         
     }
 )
@@ -283,6 +293,8 @@ blimp_results = []
 all_models = []
 all_training_sets = []
 
+all_test_data = []
+all_student_models = []
 for time_slice in env["TIME_SLICES"]:
     env["WORK_DIR"] = env["ORIGINAL_WORK_DIR"] + "/" + str(time_slice[0]) + "_" + str(time_slice[1])
     gb_authors_filtered = env.FilterAndSampleWorks(  source = gb_authors, 
@@ -327,6 +339,8 @@ for time_slice in env["TIME_SLICES"]:
 
     train_data, dev_data, test_data = tokenized_train_dev_test
 
+    
+
     teacher_1 = env.TrainTeacher(
         source = [train_data, dev_data, tokenizer],
         target = Dir(f"{env['WORK_DIR']}/teacher_1"),
@@ -351,8 +365,10 @@ for time_slice in env["TIME_SLICES"]:
         **gpu_task_config("DistillTrainStudent", "06:30:00", "24GB")
     )
 
+    all_test_data.append((student, train_dev_test[2], tokenizer, f"{time_slice[0]}_{time_slice[1]}"))
+
     env.Evaluate(
-        source = [dev_data, tokenizer, teacher_1, teacher_2, student],
+        source = [test_data, tokenizer, teacher_1, teacher_2, student],
         target = "${WORK_DIR}/evaluation_report.txt",
         **gpu_task_config("Evaluate", "01:30:00", "24GB")
     )
@@ -364,9 +380,9 @@ for time_slice in env["TIME_SLICES"]:
     )
 
     models = [(student, "student"), (teacher_1, "teacher_1"), (teacher_2, "teacher_2")]
-    all_models.extend([ (student, f"student", env["WORK_DIR"]), 
-                        (teacher_1, f"teacher_1", env["WORK_DIR"]), 
-                        (teacher_2, f"teacher_2", env["WORK_DIR"])])
+    all_models.extend([ (student, f"student", env["WORK_DIR"], f"{time_slice[0]}_{time_slice[1]}"), 
+                        (teacher_1, f"teacher_1", env["WORK_DIR"], f"{time_slice[0]}_{time_slice[1]}"), 
+                        (teacher_2, f"teacher_2", env["WORK_DIR"], f"{time_slice[0]}_{time_slice[1]}")])
 
     for model, name in models:
         blimp = env.BLIMP(
@@ -388,13 +404,13 @@ most_filtered_blimp = env.FILTER_BLIMP(
         **cpu_task_config("FILTER_BLIMP", "00:30:00", "80GB")
     )
 
-for model, name, work_dir in all_models:
+for model, name, work_dir, time_slices in all_models:
     blimp = env.BLIMP(
         source = [model, most_filtered_blimp],
-        target = f"{work_dir}/{name}_eval/blimp_filtered/blimp_results.json",
+        target = f"{work_dir}/{name}_eval/blimp_most_filtered/blimp_results.json",
         **gpu_task_config("BLIMP_most", "01:30:00", "24GB")
     )
-    blimp_results.append((blimp, f"{work_dir}/{name}_most_filtered"))
+    blimp_results.append((blimp, f"{name}_{time_slices}_most_filtered"))
 
 all_blimp = [x[0] for x in blimp_results]
 all_identifiers = [x[1] for x in blimp_results]
@@ -405,3 +421,25 @@ env.BLIMP_to_CSV(
         IDENTIFIERS = all_identifiers,
         **cpu_task_config("BLIMP_to_CSV", "00:30:00", "24GB")
     )
+
+all_students = [x[0] for x in all_test_data]
+all_test_sets = [x[1] for x in all_test_data]
+all_tokenizers = [x[2] for x in all_test_data]
+all_time_data = [x[3] for x in all_test_data]
+print(all_students)
+print(all_test_sets)
+
+env.CrossTimePerplexity(
+    source = [all_students, all_test_sets, all_tokenizers],
+    target = "${ORIGINAL_WORK_DIR}/cross_time_perplexity/results.json",
+    TIME_DATA = all_time_data,
+    MODELS = all_students,
+    TEST_SETS = all_test_sets,
+    TOKENIZERS = all_tokenizers,
+)
+
+
+    
+
+
+

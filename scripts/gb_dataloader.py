@@ -14,7 +14,10 @@ class GBDataset(Dataset):
         self.seq_length = seq_length
         self.offset = offset
         self.random_chunk = random_chunk
-        self.data = torch.load(data_file)
+        if isinstance(data_file, str):
+            self.data = torch.load(data_file)
+        else:
+            self.data = data_file
 
     def __len__(self):
         if self.random_chunk:
