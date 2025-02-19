@@ -31,6 +31,7 @@ vars.AddVariables(
     ("DATES_FILE","", "data/gb_authors_dates_1950.jsonl"), #used if USE_DATES_FILE is True
     ("WORK_MODEL", "", "meta-llama/Llama-3.3-70B-Instruct"),
     ("WORK_PROMPT", "", "data/work_date_prompt.txt"),
+    ("HISTORICAL_DATA", "", "data/minimal_pairs_new.csv"),
 
     # BLIMP settings
     ("MIN_OCCURRENCE_BLIMP", "", 2),
@@ -244,6 +245,23 @@ env = Environment(
                 "--output ${TARGET}"
             )
         ),
+        "HistoricalTest" : Builder(
+            action = (
+                "python scripts/evaluate_minimal_pairs.py "
+                "--model_dir ${SOURCES[0]} "
+                "--minimal_pairs ${HISTORICAL_DATA} "
+                "--tokenizer ${SOURCES[1]} "
+                "--report ${TARGET}"
+            )
+        ),
+        "HISTORICAL_to_CSV" : Builder(
+            action = (
+                "python scripts/historical_to_csv.py "
+                "--historical_directories ${SOURCES} "
+                "--historical_identifiers ${IDENTIFIERS} "
+                "--output_directory ${TARGET}"
+            )
+        ),
         
     }
 )
@@ -436,6 +454,24 @@ env.CrossTimePerplexity(
     MODELS = all_students,
     TEST_SETS = all_test_sets,
     TOKENIZERS = all_tokenizers,
+)
+
+historical_data = []
+for model, test_set, tokenizer, time_data in all_test_data:
+    result = env.HistoricalTest(
+        source = [model, tokenizer],
+        target = f"{env['ORIGINAL_WORK_DIR']}/historical_test/{time_data}/results.json",
+    )
+    historical_data.append((result, time_data))
+
+all_historical = [x[0] for x in historical_data]
+all_historical_identifiers = [x[1] for x in historical_data]
+
+csv = env.HISTORICAL_to_CSV(
+    source = all_historical,
+    target = "${ORIGINAL_WORK_DIR}/historical_test/results.csv",
+    IDENTIFIERS = all_historical_identifiers,
+    **cpu_task_config("HISTORICAL_to_CSV", "00:30:00", "24GB")
 )
 
 
