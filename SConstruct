@@ -206,6 +206,14 @@ env = Environment(
                 "--output ${TARGET}"
             )
         ),
+        "HistoricalMinimalPairs": Builder(
+			action = (
+				"python scripts/start_historical_mp.py "
+				"--model_dir ${SOURCES} "
+				"--tasks ${TASKS} "
+                "--output ${TARGET}"
+			)
+		)
         
     }
 )
@@ -320,6 +328,25 @@ env.EWOK(
     source = teacher_2,
     target = "${WORK_DIR}/teacher_2_eval/ewok/ewok_results.json"
 )
+
+env.HistoricalMinimalPairs(
+	source = student,
+	target = "${WORK_DIR}/student_eval/historical_mp/historical_mp_results.json",
+	TASKS = ["historical_minimal_pairs"]
+)
+
+env.HistoricalMinimalPairs(
+    source = teacher_1,
+    target = "${WORK_DIR}/teacher_1_eval/historical_mp/historical_mp_results.json",
+    TASKS = ["historical_minimal_pairs"]
+)
+
+env.HistoricalMinimalPairs(
+    source = teacher_2,
+    target = "${WORK_DIR}/teacher_2_eval/historical_mp/historical_mp_results.json",
+    TASKS = ["historical_minimal_pairs"]
+)
+
 """
 env.SuperGLUE(
     source = student,

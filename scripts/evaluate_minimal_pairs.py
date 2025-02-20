@@ -40,28 +40,10 @@ if __name__ == "__main__":
 
 
     results = []
-    for row in tqdm(minimal_pairs.iterrows()):
-        temp = {}
-        doc = {}
+    for index, row in tqdm(minimal_pairs.iterrows()):
 
-        sentence_1 = row[1]["sent_1"]
-        sentence_2 = row[1]["sent_2"]
-        doc["sentence_one"] = sentence_1
-        doc["sentence_two"] = sentence_2
-        doc["stem"] = row[1]["stem"]
-        doc["date"] = row[1]["date"]
-        doc["rationale"] = row[1]["rationale"]
-
-        temp["doc"] = doc
-        temp["arguments"] = [
-            [
-                "", sentence_1
-            ],
-            [
-                "", sentence_2
-            ]
-        ]
-
+        sentence_1 = row["sent_1"]
+        sentence_2 = row["sent_2"]
         
         inputs_1 = tokenizer(sentence_1, return_tensors="pt")
         inputs_2 = tokenizer(sentence_2, return_tensors="pt")
@@ -70,34 +52,54 @@ if __name__ == "__main__":
         inputs_2 = inputs_2.to(device)
 
         outputs_1 = model(**inputs_1, labels=inputs_1["input_ids"])
-        perplexity_1 = outputs_1.loss
-
-
+        log_perplexity_1 = outputs_1.loss
 
         outputs_2 = model(**inputs_2, labels=inputs_2["input_ids"])
-        perplexity_2 = outputs_2.loss
+        log_perplexity_2 = outputs_2.loss
 
         # TODO: check if True/False difference is truly >= 0 
-        temp["resps"] = [
-            [
-                [
-                    perplexity_1.item(), perplexity_1.item()>=0
-                ],
-            ],
-            [
-                [
-                    perplexity_2.item(), perplexity_2.item()>=0
-                ]
-            ]
-        ]
-        if perplexity_1.item()>=perplexity_2.item():
-            temp["more_likely_sentence"] = "sentence_2"
-        else:
-            temp["more_likely_sentence"] = "sentence_1"
         
-        temp["acc"] = "NA"
-        temp["task"] = "minimal_pairs"
-        results.append(temp)
+        result_dict = {
+            "task": "minimal_pairs",
+            "doc_id": index,
+            "doc": {
+                "sentence_one": sentence_1,
+                "sentence_two": sentence_2,
+                "stem": row["stem"],
+                "date": row["date"],
+                "rationale": row["rationale"]
+            },
+            "target": "NA",
+            "arguments": [
+                [
+                    "", sentence_1
+                ],
+                [
+                    "", sentence_2
+                ]
+            ],
+            "resps": [
+                [
+                    [
+                        log_perplexity_1.item(),
+                        log_perplexity_1.item()>=0
+                    ],
+                ],
+                [
+                    [
+                        log_perplexity_2.item(),
+                        log_perplexity_2.item()>=0
+                    ]
+                ]
+            ],
+            "acc": "NA",
+            "more_likely_sentence": (
+                "sentence_1" if log_perplexity_1.item()>=log_perplexity_2.item()
+                else "sentence_2"
+            )
+        }
+        
+        results.append(result_dict)
         
     with open(args.report, "wt") as fout:
         # add to jsonl
