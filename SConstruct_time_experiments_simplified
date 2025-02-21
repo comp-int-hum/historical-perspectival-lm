@@ -455,8 +455,6 @@ all_students = [x[4] for x in all_data]
 all_test_sets = [x[1][2] for x in all_data]
 all_tokenizers = [x[3] for x in all_data]
 all_time_data = [f"{x[0][0]}_{x[0][1]}" for x in all_data]
-print(all_students)
-print(all_test_sets)
 
 env.CrossTimePerplexity(
     source = [all_students, all_test_sets, all_tokenizers],
@@ -465,6 +463,7 @@ env.CrossTimePerplexity(
     MODELS = all_students,
     TEST_SETS = all_test_sets,
     TOKENIZERS = all_tokenizers,
+    **gpu_task_config("CrossTimePerplexity", "01:30:00", "24GB")
 )
 """
 historical_data = []
