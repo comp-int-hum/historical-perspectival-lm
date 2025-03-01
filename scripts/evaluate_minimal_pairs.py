@@ -4,7 +4,7 @@ from transformers import (
     GPTJConfig, GPTJForCausalLM
 )
 from transformers import Trainer, TrainingArguments, DataCollatorForLanguageModeling
-from transformers import GPT2TokenizerFast
+from transformers import AutoTokenizer
 from torch.utils.data import Subset
 from random import sample, seed
 from pathlib import Path
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     minimal_pairs = pd.read_csv(args.minimal_pairs, sep=";")
     
     model = LlamaForCausalLM.from_pretrained(args.model_dir)
-    tokenizer = GPT2TokenizerFast(tokenizer_file = str(args.tokenizer))
+    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

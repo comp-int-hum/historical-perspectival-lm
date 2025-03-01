@@ -1,0 +1,130 @@
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
+from transformers import Trainer, TrainingArguments, DataCollatorForLanguageModeling
+from torch.utils.data import Subset
+from random import sample, seed
+from pathlib import Path
+import yaml
+import argparse
+import wandb
+from gb_dataloader import GBDataset
+import torch
+import glob
+import shutil
+from peft import LoraConfig, get_peft_model
+import os
+from torch.utils.data import DataLoader
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model_name", type = str, help = "Name of model to load")
+    parser.add_argument("--train_data", type=str, default=None, help="Path to the training data")
+    parser.add_argument("--eval_data", type=str, default=None, help="Path to the evaluation data")
+    parser.add_argument("--tokenizer_path", type=str, required = False, default=None, help="Path to the tokenizer")
+    # model parameters
+    parser.add_argument("--config", type=str, default="./config/llama-360M.yaml", help="Configuration file path")
+    parser.add_argument("--random_seed", type=int, default=None, help="Random seed")
+    # wandb arguments
+    parser.add_argument("--use_wandb", type=bool, default=False, help="Use wandb for logging")
+    parser.add_argument("--wandb_project", type=str, default=None, help="Wandb project name")
+    parser.add_argument("--wandb_name", type=str, default=None, help="Wandb run name")
+    # output
+    parser.add_argument("--output_dir", type=str, default=None, help="Path to the output directory")
+    
+    args = parser.parse_args()
+
+    with open(args.config, 'r') as f:
+        config = yaml.safe_load(f)
+
+    seed(args.random_seed) # we fix the same subset for all models
+    
+    # model_config = AutoConfig.from_pretrained(args.model_name, attention_dropout = dropout)
+    model = AutoModelForCausalLM.from_pretrained(args.model_name,
+                                                 torch_dtype=torch.float16)
+    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_path if args.tokenizer_path else args.model_name)
+    
+    dora_config = LoraConfig(
+        use_dora = True,
+        r = config["dora"]["rank"],
+        lora_alpha = config["dora"]["alpha"],
+        target_modules=(
+            config["model"]["target_modules"]
+            if config["model"]["target_modules"]
+            else ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+        ),
+        lora_dropout = config["dora"]["dropout"],
+        bias="none",
+    )
+    peft_model = get_peft_model(model, dora_config)
+
+    
+    
+    # in the original code I had random_chunk = False
+    # random_chunk=True is expected to improve the model performance a bit
+    train_dataset = GBDataset(args.train_data, config['data']['seq_length'], random_chunk=True)
+    
+    print(f"using {config['training']['gpus']} GPUs")
+    train_tokens = len(train_dataset) * config['data']['seq_length']
+    print(f"train_tokens = {train_tokens/10**6}M")
+
+    full_eval_dataset = GBDataset(args.eval_data, config['data']['seq_length'], offset=0)
+
+    eval_indices = sample(range(len(full_eval_dataset)), config['data']['eval_samples'])
+    eval_dataset = Subset(full_eval_dataset, eval_indices)
+
+    data_collator = DataCollatorForLanguageModeling(
+        tokenizer=tokenizer, mlm=False,
+    )
+    
+    print(f'model parameters = {peft_model.num_parameters()}')
+    
+    # print(f"PEFT MODEL TRAINABLE: {}")
+    peft_model.print_trainable_parameters()
+    output_dir = args.output_dir
+    accumulation_steps = config['training']['gradient_accumulation_steps']
+    per_device_bsz = config['training']['batch_size'] // accumulation_steps
+    
+    print(f"cuda available: {torch.cuda.is_available()}")
+    print(f"training length: {len(train_dataset)}")
+    training_args = TrainingArguments(
+        output_dir=output_dir,
+        overwrite_output_dir=True,
+        save_strategy = "epoch",
+        evaluation_strategy = "epoch",
+        num_train_epochs = config['training']['num_epochs'],
+        gradient_accumulation_steps = config["training"]["gradient_accumulation_steps"],
+        eval_accumulation_steps = 16,
+        per_device_train_batch_size = per_device_bsz,
+        per_device_eval_batch_size = per_device_bsz,
+        save_total_limit = 3,  # Set to zero to avoid saving
+        warmup_steps = config['training']['warmup_steps'], 
+        # lr_scheduler_type = "cosine",
+        learning_rate = float(config['training']['lr']),
+        logging_steps = 20,
+        fp16 = config['training']['fp16'],
+        load_best_model_at_end = True,
+        metric_for_best_model = "eval_loss",
+        torch_compile = config['training'].get('torch_compile', False),
+        save_only_model = True,
+    )
+
+    trainer = Trainer(
+        model=peft_model,
+        args=training_args,
+        data_collator=data_collator,
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
+    )
+
+    trainer.can_return_loss = True 
+
+    if args.use_wandb:
+        wandb.login()
+        wandb.init(project= args.wandb_project, name=args.wandb_name, config=config)
+
+    trainer.train()
+    
+    merged_model = peft_model.merge_and_unload()
+    merged_model.save_pretrained(output_dir)
+    # trainer.save_model(output_dir)
+    # LoraModel.merge_and_unload()
+    tokenizer.save_pretrained(output_dir)

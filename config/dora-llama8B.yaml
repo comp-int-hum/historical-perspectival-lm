@@ -1,0 +1,26 @@
+data:
+  seq_length: 128
+  eval_samples: 8192
+
+model:
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - up_proj
+    - down_proj
+
+training:
+  lr: 1e-4
+  batch_size: 16
+  num_epochs: 3
+  gradient_accumulation_steps: 2
+  warmup_steps: 100
+  fp16: True
+  gpus: "0, 1"
+
+dora:
+  rank: 16
+  alpha: 32
+  dropout: 0.05
+

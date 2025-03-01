@@ -1,6 +1,6 @@
 import argparse
 from tokenizers import Tokenizer
-from transformers import GPT2TokenizerFast
+from transformers import AutoTokenizer
 import torch
 import logging
 
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     logging.info(f"Encoding file: {args.input}")
 
     encoded = []
-    tokenizer = GPT2TokenizerFast(tokenizer_file=args.tokenizer)
+    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer)
     for chunk in chunk_reader(args.input):
         enc_chunk = tokenizer.encode(chunk)
         encoded.extend(enc_chunk)

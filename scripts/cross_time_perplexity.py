@@ -9,8 +9,10 @@ import glob
 from transformers import (
     GPT2Config, GPT2LMHeadModel, 
     LlamaConfig, LlamaForCausalLM, 
-    GPTJConfig, GPTJForCausalLM
+    GPTJConfig, GPTJForCausalLM,
+    AutoModelForCausalLM, AutoTokenizer,
 )
+from transformers import AutoTokenizer
 from transformers import Trainer, TrainingArguments, DataCollatorForLanguageModeling
 from transformers import GPT2TokenizerFast
 from torch.utils.data import Subset
@@ -52,8 +54,10 @@ if __name__ == "__main__":
         save_strategy = "epoch",
         evaluation_strategy = "epoch",
         num_train_epochs=1,
+        eval_accumulation_steps=32,
         gradient_accumulation_steps=1,
-        per_device_train_batch_size=32,
+        per_device_train_batch_size=8,
+        per_device_eval_batch_size=16,
         save_total_limit=1,  # Set to zero to avoid saving
         warmup_steps=300, 
         lr_scheduler_type="cosine",
@@ -68,12 +72,8 @@ if __name__ == "__main__":
 
     results = {}
     for model_file, tokenizer, model_time in zip(args.models, args.tokenizers, args.time_data):
-        model = LlamaForCausalLM.from_pretrained(model_file)
-        tokenizer = GPT2TokenizerFast(tokenizer_file = tokenizer)
-        tokenizer.bos_token = "<s>"
-        tokenizer.eos_token = "</s>"
-        tokenizer.pad_token = "<pad>"
-        tokenizer.model_max_length = SEQUENCE_LENGTH
+        model = AutoModelForCausalLM.from_pretrained(model_file, torch_dtype=torch.float16)
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer)
         data_collator = DataCollatorForLanguageModeling(
             tokenizer=tokenizer, mlm=False,
         )
@@ -85,7 +85,11 @@ if __name__ == "__main__":
                 enc_chunk = tokenizer.encode(chunk)
                 encoded.extend(enc_chunk)
             test_dataset = GBDataset(torch.tensor(encoded), SEQUENCE_LENGTH, random_chunk=True)
+            
+            if len(test_dataset) > 10000:
+                test_dataset = Subset(test_dataset, sample(range(len(test_dataset)), 10000))
 
+            model.eval()
             model_trainer = Trainer(
                 model=model,
                 args=training_args,
@@ -96,6 +100,11 @@ if __name__ == "__main__":
             res_1 = model_trainer.evaluate()
 
             results[model_time][test_time] = res_1
+            del model_trainer
+        del model
+        del tokenizer
+        torch.cuda.empty_cache()
+
     
     cleaned_model = {}
     for model_time in results:
