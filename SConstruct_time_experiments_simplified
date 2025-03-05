@@ -463,7 +463,7 @@ env.CrossTimePerplexity(
     MODELS = all_students,
     TEST_SETS = all_test_sets,
     TOKENIZERS = all_tokenizers,
-    **gpu_task_config("CrossTimePerplexity", "01:30:00", "24GB")
+    **gpu_task_config("CrossTimePerplexity", "01:30:00", "48GB")
 )
 """
 historical_data = []
