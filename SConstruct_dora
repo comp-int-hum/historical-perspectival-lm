@@ -255,6 +255,13 @@ env = Environment(
                 "--output ${TARGET}"
             )
         ),
+		"HistoricalClozeTask": Builder(
+			action = (
+				"python scripts/start_historical_cloze.py "
+				"--model_dir ${SOURCES} "
+                "--output ${TARGET}"
+			)
+		),
         "HistoricalTest" : Builder(
             action = (
                 "python scripts/evaluate_minimal_pairs.py "
