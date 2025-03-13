@@ -67,7 +67,7 @@ if __name__ == "__main__":
     eval_indices = sample(range(len(full_eval_dataset)), config['data']['eval_samples'])
     eval_dataset = Subset(full_eval_dataset, eval_indices)
 
-    tokenizer = GPT2TokenizerFast(tokenizer_file = str(args.tokenizer_path))
+    tokenizer = GPT2TokenizerFast.from_pretrained(args.tokenizer_path)
     tokenizer.bos_token = "<s>"
     tokenizer.eos_token = "</s>"
     tokenizer.pad_token = "<pad>"

@@ -35,6 +35,7 @@ vars.AddVariables(
 
     # BLIMP settings
     ("MIN_OCCURRENCE_BLIMP", "", 2),
+    ("MIN_OCCURRENCE_EVALUATION", "", 2),
 
     # SLURM settings
     ("CPU_QUEUE", "", "some_queue"),
@@ -42,8 +43,8 @@ vars.AddVariables(
     ("GPU_QUEUE", "", "another_queue"),
     ("GPU_ACCOUNT", "", "another_account"),
     ("GPU_COUNT", "", 1),
-    ("ORIGINAL_WORK_DIR", "", "work_times"),
-    ("WORK_DIR", "", "work_times"),
+    ("ORIGINAL_WORK_DIR", "", "work_times_babyllama"),
+    ("WORK_DIR", "", "work_times_babyllama"),
 
     # Data Split settings
     # TODO: change splits back to 0.7, 0.1, 0.2
@@ -57,7 +58,7 @@ vars.AddVariables(
 
     # Wandb settings
     ("USE_WANDB", "", True),
-    ("WANDB_PROJECT", "", "BabyLlama_2_time_periods"),
+    ("WANDB_PROJECT", "", "BabyLlama_2_randomization_teachers"),
 
     # Training
     ("TRAINER_CONFIG_1", "", "config/llama-smoll-345M.yaml"),
@@ -118,7 +119,6 @@ env = Environment(
 				"--output ${TARGETS}"
 			)
 		),
-
         "TrainingSplit" : Builder(
             action = (
                 "python scripts/train_test_val.py "
@@ -131,11 +131,9 @@ env = Environment(
                 "--test_portion ${TEST_PORTION} "
                 "--random_seed ${RANDOM_SEED} "
                 "--split_level ${SPLIT_LEVEL} "
-		"--split_style ${SPLIT_STYLE}"
+		        "--split_style ${SPLIT_STYLE}"
             )
         ),
-
-
         "TrainTokenizer" : Builder(
             action = (
                 "python scripts/train_tokenizer.py "
@@ -203,11 +201,28 @@ env = Environment(
                 "--output_directory ${TARGET}"
             )
         ),
+        "START_EVALUATION" : Builder(
+            action = (
+                "python scripts/start_evaluation.py "
+                "--model_dir ${SOURCES[0]} "
+                "--tasks ${TASK} "
+                "--output ${TARGET}"
+            )
+        ),
+        "FILTER_EVALUATION" : Builder(
+            action = (
+                "python scripts/filter_evaluation.py "
+                "--data ${SOURCES[1:]} "
+                "--evaluation_result ${SOURCES[0]} "
+                "--min_occurrence ${MIN_OCCURRENCE_EVALUATION} "
+                "--output ${TARGET} "
+            )
+        ),
         "BLIMP" : Builder(
             action = (
                 "python scripts/start_blimp.py "
                 "--model_dir ${SOURCES[0]} "
-                "--filtered_blimp_dir ${SOURCES[1]} "
+                "--evaluation_result ${SOURCES[1]} "
                 "--tasks blimp_filtered "
                 "--output ${TARGET}"
             )
@@ -245,6 +260,13 @@ env = Environment(
                 "--output ${TARGET}"
             )
         ),
+        "HistoricalMinimalPairs": Builder(
+			action = (
+				"python scripts/start_historical_mp.py "
+				"--model_dir ${SOURCES} "
+                "--output ${TARGET}"
+			)
+		),
         "HistoricalTest" : Builder(
             action = (
                 "python scripts/evaluate_minimal_pairs.py "
@@ -307,12 +329,8 @@ else:
     gb_authors = env.File(env["DATES_FILE"])
 
 
-blimp_results = []
-all_models = []
-all_training_sets = []
+all_data = []
 
-all_test_data = []
-all_student_models = []
 for time_slice in env["TIME_SLICES"]:
     env["WORK_DIR"] = env["ORIGINAL_WORK_DIR"] + "/" + str(time_slice[0]) + "_" + str(time_slice[1])
     gb_authors_filtered = env.FilterAndSampleWorks(  source = gb_authors, 
@@ -339,11 +357,9 @@ for time_slice in env["TIME_SLICES"]:
         **cpu_task_config("TrainingSplit", "00:30:00", "24GB")
     )
 
-    all_training_sets.append(train_dev_test[0])
-
     tokenizer = env.TrainTokenizer(
         source = train_dev_test[0],
-        target = "${WORK_DIR}/tokenizer.json",
+        target = Dir(f"{env['WORK_DIR']}/tokenizer"),
         **cpu_task_config("TrainTokenizer", "00:30:00", "24GB")
     )
 
@@ -356,8 +372,6 @@ for time_slice in env["TIME_SLICES"]:
     ))
 
     train_data, dev_data, test_data = tokenized_train_dev_test
-
-    
 
     teacher_1 = env.TrainTeacher(
         source = [train_data, dev_data, tokenizer],
@@ -372,6 +386,7 @@ for time_slice in env["TIME_SLICES"]:
         target = Dir(f"{env['WORK_DIR']}/teacher_2"),
         CONFIG = env["TRAINER_CONFIG_2"],
         WANDB_NAME = f"Teacher_2_{time_slice[0]}_{time_slice[1]}",
+        RANDOM_SEED = env["RANDOM_SEED"] + 1,
         **gpu_task_config("TrainTeacher2", "03:30:00", "24GB")
     )
 
@@ -383,55 +398,52 @@ for time_slice in env["TIME_SLICES"]:
         **gpu_task_config("DistillTrainStudent", "06:30:00", "24GB")
     )
 
-    all_test_data.append((student, train_dev_test[2], tokenizer, f"{time_slice[0]}_{time_slice[1]}"))
-
     env.Evaluate(
         source = [test_data, tokenizer, teacher_1, teacher_2, student],
         target = "${WORK_DIR}/evaluation_report.txt",
         **gpu_task_config("Evaluate", "01:30:00", "24GB")
     )
+    all_data.append((time_slice, train_dev_test, tokenized_train_dev_test, tokenizer, student, teacher_1, teacher_2, env["WORK_DIR"]))
 
-    filtered_blimp = env.FILTER_BLIMP(
-        source = [Dir("evaluation-pipeline-2024/evaluation_data/blimp"), train_dev_test[0]],
-        target = "${WORK_DIR}/filtered_blimp/adjunct_island.jsonl",
-        **cpu_task_config("FILTER_BLIMP", "00:30:00", "80GB")
-    )
 
-    models = [(student, "student"), (teacher_1, "teacher_1"), (teacher_2, "teacher_2")]
-    all_models.extend([ (student, f"student", env["WORK_DIR"], f"{time_slice[0]}_{time_slice[1]}"), 
-                        (teacher_1, f"teacher_1", env["WORK_DIR"], f"{time_slice[0]}_{time_slice[1]}"), 
-                        (teacher_2, f"teacher_2", env["WORK_DIR"], f"{time_slice[0]}_{time_slice[1]}")])
+all_training_texts = [data[1][0] for data in all_data]
 
-    for model, name in models:
-        blimp = env.BLIMP(
-            source = [model, filtered_blimp],
-            target = f"{env['WORK_DIR']}/{name}_eval/blimp_filtered/blimp_results.json",
-            **gpu_task_config("BLIMP", "01:30:00", "24GB")
-        )
-        blimp_results.append((blimp, f"{name}_{time_slice[0]}_{time_slice[1]}"))
 
-        env.EWOK(
-            source = model,
-            target = f"{env['WORK_DIR']}/{name}_eval/ewok/ewok_results.json",
-            **gpu_task_config("EWOK", "01:30:00", "24GB")
-        )
+all_evaluation_results = {}
 
-most_filtered_blimp = env.FILTER_BLIMP(
-        source = [Dir("evaluation-pipeline-2024/evaluation_data/blimp")] + all_training_sets,
-        target = "${ORIGINAL_WORK_DIR}/most_filtered_blimp/adjunct_island.jsonl",
-        **cpu_task_config("FILTER_BLIMP", "00:30:00", "80GB")
-    )
+for time_slice, train_dev_test, tokenized_train_dev_test, tokenizer, student, teacher_1, teacher_2, work_dir in all_data:
+    for model, name in [(student, "student"), (teacher_1, "teacher_1"), (teacher_2, "teacher_2")]:
+        for task_name in ["blimp", "ewok_filtered", "historical_mp"]:
+            task_result = env.START_EVALUATION(
+                source = [model],
+                target = f"{work_dir}/{name}_eval/{task_name}/{task_name}_results.json",
+                TASK = task_name,
+                **gpu_task_config(f"{task_name}_{name}", "01:30:00", "24GB")
+            )
+            filtered_result = env.FILTER_EVALUATION(
+                source = [task_result, train_dev_test[0]],
+                target = f"{work_dir}/{name}_eval/{task_name}_filtered/{task_name}_results.json",
+                MIN_OCCURRENCE = env["MIN_OCCURRENCE_EVALUATION"],
+                **cpu_task_config(f"FILTER_{task_name}_{name}", "00:30:00", "24GB")
+            )
+            maximal_filtered_result = env.FILTER_EVALUATION(
+                source = [task_result, all_training_texts],
+                target = f"{work_dir}/{name}_eval/{task_name}_maximal_filtered/{task_name}_results.json",
+                MIN_OCCURRENCE = env["MIN_OCCURRENCE_EVALUATION"],
+                **cpu_task_config(f"MAX_FILTER_{task_name}_{name}", "00:30:00", "24GB")
+            )
+            if task_name not in all_evaluation_results:
+                all_evaluation_results[task_name] = []
+            
 
-for model, name, work_dir, time_slices in all_models:
-    blimp = env.BLIMP(
-        source = [model, most_filtered_blimp],
-        target = f"{work_dir}/{name}_eval/blimp_most_filtered/blimp_results.json",
-        **gpu_task_config("BLIMP_most", "01:30:00", "24GB")
-    )
-    blimp_results.append((blimp, f"{name}_{time_slices}_most_filtered"))
+            all_evaluation_results[task_name].append((task_result, f"{name}_{time_slice[0]}_{time_slice[1]}"))
+            all_evaluation_results[task_name].append((filtered_result, f"{name}_{time_slice[0]}_{time_slice[1]}_filtered"))
+            all_evaluation_results[task_name].append((maximal_filtered_result, f"{name}_{time_slice[0]}_{time_slice[1]}_maximal_filtered"))
 
-all_blimp = [x[0] for x in blimp_results]
-all_identifiers = [x[1] for x in blimp_results]
+
+
+all_blimp = [x[0] for x in all_evaluation_results["blimp"]]
+all_identifiers = [x[1] for x in all_evaluation_results["blimp"]]
 
 env.BLIMP_to_CSV(
         source = all_blimp,
@@ -440,12 +452,10 @@ env.BLIMP_to_CSV(
         **cpu_task_config("BLIMP_to_CSV", "00:30:00", "24GB")
     )
 
-all_students = [x[0] for x in all_test_data]
-all_test_sets = [x[1] for x in all_test_data]
-all_tokenizers = [x[2] for x in all_test_data]
-all_time_data = [x[3] for x in all_test_data]
-print(all_students)
-print(all_test_sets)
+all_students = [x[4] for x in all_data]
+all_test_sets = [x[1][2] for x in all_data]
+all_tokenizers = [x[3] for x in all_data]
+all_time_data = [f"{x[0][0]}_{x[0][1]}" for x in all_data]
 
 env.CrossTimePerplexity(
     source = [all_students, all_test_sets, all_tokenizers],
@@ -454,8 +464,9 @@ env.CrossTimePerplexity(
     MODELS = all_students,
     TEST_SETS = all_test_sets,
     TOKENIZERS = all_tokenizers,
+    **gpu_task_config("CrossTimePerplexity", "01:30:00", "48GB")
 )
-
+"""
 historical_data = []
 for model, test_set, tokenizer, time_data in all_test_data:
     result = env.HistoricalTest(
@@ -473,9 +484,7 @@ csv = env.HISTORICAL_to_CSV(
     IDENTIFIERS = all_historical_identifiers,
     **cpu_task_config("HISTORICAL_to_CSV", "00:30:00", "24GB")
 )
-
-
-    
+"""
 
 
 
