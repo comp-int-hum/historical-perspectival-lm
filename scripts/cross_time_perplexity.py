@@ -39,7 +39,6 @@ def chunk_reader(fname, chunk_len=10000000):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--models", nargs="+", type=str, help="models")
-    parser.add_argument("--tokenizers", nargs="+", type=str, help="corresponding tokenizers")
     parser.add_argument("--time_data", nargs="+", type=str, help="time description")
     parser.add_argument("--test_sets", nargs="+", type=str, help="train_sets")
     parser.add_argument("--output", type=str, default="results.json", help="output file")
@@ -71,9 +70,9 @@ if __name__ == "__main__":
     output_directory = os.path.dirname(args.output)
 
     results = {}
-    for model_file, tokenizer, model_time in zip(args.models, args.tokenizers, args.time_data):
+    for model_file, model_time in zip(args.models, args.time_data):
         model = AutoModelForCausalLM.from_pretrained(model_file, torch_dtype=torch.float16)
-        tokenizer = AutoTokenizer.from_pretrained(tokenizer)
+        tokenizer = AutoTokenizer.from_pretrained(model_file)
         data_collator = DataCollatorForLanguageModeling(
             tokenizer=tokenizer, mlm=False,
         )

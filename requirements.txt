@@ -51,3 +51,9 @@ typing_extensions==4.12.2
 urllib3==2.2.3
 Wikidata==0.8.1
 wandb
+sacrebleu
+evaluate
+scikit-learn
+sqlitedict
+more_itertools
+matplotlib

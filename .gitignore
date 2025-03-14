@@ -1,1 +1,12 @@
+.vscode*
 .sconsign.dblite
+custom*
+work*
+wandb*
+backup*
+eval_dir*
+local*
+.vs_code*
+README2.md
+*pycache*
+*test_load*
