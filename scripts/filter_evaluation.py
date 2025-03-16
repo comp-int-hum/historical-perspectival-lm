@@ -2,6 +2,7 @@ import argparse
 import os
 import shutil
 import json
+import math
 
 # this is a very simple script to start the blimp execution
 if __name__ == "__main__":
@@ -20,8 +21,8 @@ if __name__ == "__main__":
         if len(accuracies) == 0:
             return None, None
         mean = sum(accuracies) / len(accuracies)
-        stderr = (sum((x - mean) ** 2 for x in accuracies) / len(accuracies)) ** 0.5
-        return mean, stderr
+        sem_prop = math.sqrt(mean * (1 - mean) / len(accuracies))
+        return mean, sem_prop
     
     args.evaluation_result = os.path.dirname(args.evaluation_result)
     
@@ -45,13 +46,14 @@ if __name__ == "__main__":
     
     
     # merge the word dictionaries so that the min count is kept
-    min_word_dictionary = word_dictionaries[0]
-    for word_dictionary in word_dictionaries:
-        for word, count in word_dictionary.items():
-            if word not in min_word_dictionary:
-                min_word_dictionary[word] = 0
-            min_word_dictionary[word] = min(min_word_dictionary[word], count)
-    word_dictionary = min_word_dictionary
+    common_words = set(word_dictionaries[0].keys())
+    for d in word_dictionaries:
+        common_words &= set(d.keys())
+
+    min_dict = {}
+    for word in common_words:
+        min_dict[word] = min(d[word] for d in word_dictionaries)
+    word_dictionary = min_dict
     
     
     args.output = os.path.dirname(args.output)
@@ -74,7 +76,10 @@ if __name__ == "__main__":
 
         results = json.load(open(os.path.join(args.evaluation_result, file), "r"))
         for task in results:
-            text = " ".join(task["arguments"][0]) + " " + " ".join(task["arguments"][1])
+            if "historical_cloze" in task_description:
+                text = " ".join(task["arguments"][0])
+            else:
+                text = " ".join(task["arguments"][0]) + " " + " ".join(task["arguments"][1])
             text = text.lower()
             cleaned_line = ''.join([i if i.isalpha() or i.isspace() else ' ' for i in text])
             words = cleaned_line.split(" ")
@@ -91,7 +96,10 @@ if __name__ == "__main__":
             
             if valid_line:
                 filtered_results.append(task)
-                results_by_category[task_description].append(extract_accuracy(task))
+                if "acc" in task:
+                    results_by_category[task_description].append(extract_accuracy(task))
+                elif "perplexity" in task:
+                    results_by_category[task_description].append(task["perplexity"])
 
         with open(output_file, "w") as f:
             json.dump(filtered_results, f)

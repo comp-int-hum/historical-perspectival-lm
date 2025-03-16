@@ -378,11 +378,6 @@ for time_slice in env["TIME_SLICES"]:
         **gpu_task_config("DoraFinetune", "20:00:00", "24GB")
     )
 
-    # env.Evaluate(
-    #     source = [test_data, tokenizer, model],
-    #     target = "${WORK_DIR}/evaluation_report.txt",
-    #     **gpu_task_config("Evaluate", "01:30:00", "24GB")
-    # )
     all_data.append((time_slice, train_dev_test, tokenized_train_dev_test, tokenizer, model, env["WORK_DIR"]))
 
 

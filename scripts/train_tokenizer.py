@@ -4,7 +4,7 @@ from tokenizers import (Tokenizer, decoders, models, pre_tokenizers,
 from tokenizers.normalizers import NFKC
 import logging
 from transformers import GPT2TokenizerFast
-
+import yaml
 
 # code restructured from: https://github.com/timinar/BabyLlama/blob/main/cleaning_and_tokenization.ipynb
 
@@ -13,7 +13,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", help="text input")
     parser.add_argument("--output", help="Tokenizer model output")
+    parser.add_argument("--model_config", help="Model config which holds max sequence length")
     args, rest = parser.parse_known_args()
+
+    with open(args.model_config, 'r') as f:
+        config = yaml.safe_load(f)
 
     logging.basicConfig(level=logging.INFO)
 
@@ -32,13 +36,15 @@ if __name__ == "__main__":
     tokenizer.save(args.output + ".json", pretty=True)
 
     gpt2_tokenizer = GPT2TokenizerFast(tokenizer_file=args.output + ".json")
+    gpt2_tokenizer.bos_token = "<s>"
+    gpt2_tokenizer.eos_token = "</s>"
+    gpt2_tokenizer.pad_token = "<pad>"
+    gpt2_tokenizer.model_max_length = config['data']['seq_length']
     gpt2_tokenizer.save_pretrained(args.output)
 
     logging.info("Testing tokenizer")
     tokenizer = GPT2TokenizerFast.from_pretrained(args.output)
-    tokenizer.bos_token = "<s>"
-    tokenizer.eos_token = "</s>"
-    tokenizer.pad_token = "<pad>"
+
 
 
     # text = 'Shiro Okada (岡田志郎, "Okada Shirō", June 9, 1949; Hirakata, Osaka {age 71} - ) is a Japanese guitarist who participate in the Group Sound band, the Ox. His nickname was Shiro (シロー) and his real name is Shiro Okamoto (岡田史郎).'
@@ -49,12 +55,3 @@ if __name__ == "__main__":
 
     decoded = tokenizer.decode(encoded)
     logging.info(f"Decoded String: {decoded}")
-
-
-
-    
-
-
-
-
-

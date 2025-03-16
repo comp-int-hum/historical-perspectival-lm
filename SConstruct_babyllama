@@ -43,8 +43,8 @@ vars.AddVariables(
     ("GPU_QUEUE", "", "another_queue"),
     ("GPU_ACCOUNT", "", "another_account"),
     ("GPU_COUNT", "", 1),
-    ("ORIGINAL_WORK_DIR", "", "work_times_babyllama"),
-    ("WORK_DIR", "", "work_times_babyllama"),
+    ("ORIGINAL_WORK_DIR", "", "work_times_babyllama_tokenizer"),
+    ("WORK_DIR", "", "work_times_babyllama_tokenizer"),
 
     # Data Split settings
     # TODO: change splits back to 0.7, 0.1, 0.2
@@ -58,7 +58,7 @@ vars.AddVariables(
 
     # Wandb settings
     ("USE_WANDB", "", True),
-    ("WANDB_PROJECT", "", "BabyLlama_2_randomization_teachers"),
+    ("WANDB_PROJECT", "", "BabyLlama_2_randomization_teachers_tokenizer"),
 
     # Training
     ("TRAINER_CONFIG_1", "", "config/llama-smoll-345M.yaml"),
@@ -138,7 +138,8 @@ env = Environment(
             action = (
                 "python scripts/train_tokenizer.py "
                 "--input ${SOURCES} "
-                "--output ${TARGETS}"
+                "--output ${TARGETS} "
+                "--model_config ${STUDENT_CONFIG}"
             )
         ),
 	    "TokenizeSplit" : Builder(
@@ -397,12 +398,6 @@ for time_slice in env["TIME_SLICES"]:
         WANDB_NAME = f"Student_{time_slice[0]}_{time_slice[1]}",
         **gpu_task_config("DistillTrainStudent", "06:30:00", "24GB")
     )
-
-    env.Evaluate(
-        source = [test_data, tokenizer, teacher_1, teacher_2, student],
-        target = "${WORK_DIR}/evaluation_report.txt",
-        **gpu_task_config("Evaluate", "01:30:00", "24GB")
-    )
     all_data.append((time_slice, train_dev_test, tokenized_train_dev_test, tokenizer, student, teacher_1, teacher_2, env["WORK_DIR"]))
 
 
@@ -413,7 +408,7 @@ all_evaluation_results = {}
 
 for time_slice, train_dev_test, tokenized_train_dev_test, tokenizer, student, teacher_1, teacher_2, work_dir in all_data:
     for model, name in [(student, "student"), (teacher_1, "teacher_1"), (teacher_2, "teacher_2")]:
-        for task_name in ["blimp", "ewok_filtered", "historical_mp"]:
+        for task_name in ["blimp", "ewok_filtered", "historical_mp", "historical_cloze", "historical_mp_updated"]:
             task_result = env.START_EVALUATION(
                 source = [model],
                 target = f"{work_dir}/{name}_eval/{task_name}/{task_name}_results.json",
@@ -445,10 +440,12 @@ for time_slice, train_dev_test, tokenized_train_dev_test, tokenizer, student, te
 all_blimp = [x[0] for x in all_evaluation_results["blimp"]]
 all_identifiers = [x[1] for x in all_evaluation_results["blimp"]]
 
+all_max_blimp_students = [x[0] for x in all_evaluation_results["blimp"] if "maximal_filtered" in x[1] and "student" in x[1]]
+all_max_identifiers_students = [x[1] for x in all_evaluation_results["blimp"] if "maximal_filtered" in x[1] and "student" in x[1]]
 env.BLIMP_to_CSV(
-        source = all_blimp,
+        source = all_max_blimp_students,
         target = "${ORIGINAL_WORK_DIR}/combined_BLIMP_filtered/blimp_results.csv",
-        IDENTIFIERS = all_identifiers,
+        IDENTIFIERS = all_max_identifiers_students,
         **cpu_task_config("BLIMP_to_CSV", "00:30:00", "24GB")
     )
 

@@ -71,6 +71,9 @@ if __name__ == "__main__":
 
     tokenizer_path = args.tokenizer_path
     tokenizer = GPT2TokenizerFast.from_pretrained(tokenizer_path)
+    tokenizer.bos_token = "<s>"
+    tokenizer.eos_token = "</s>"
+    tokenizer.pad_token = "<pad>"
     tokenizer.model_max_length = config['data']['seq_length']
 
     if args.lr:

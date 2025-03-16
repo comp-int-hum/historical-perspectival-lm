@@ -40,7 +40,7 @@ if __name__ == "__main__":
     test_token = len(test_dataset) * SEQUENCE_LENGTH
     print(f"train_tokens = {test_token/10**6}M")
 
-    tokenizer = GPT2TokenizerFast(tokenizer_file = str(args.tokenizer_path))
+    tokenizer = GPT2TokenizerFast.from_pretrained(args.tokenizer_path)
     tokenizer.bos_token = "<s>"
     tokenizer.eos_token = "</s>"
     tokenizer.pad_token = "<pad>"
