@@ -74,10 +74,7 @@ if __name__ == "__main__":
 
         results = json.load(open(os.path.join(args.evaluation_result, file), "r"))
         for task in results:
-            if "historical_cloze" in task_description:
-                text = " ".join(task["arguments"][0][0]) + " " + " ".join(task["arguments"][0][1])
-            else:
-                text = " ".join(task["arguments"][0]) + " " + " ".join(task["arguments"][1])
+            text = " ".join(task["arguments"][0]) + " " + " ".join(task["arguments"][1])
             text = text.lower()
             cleaned_line = ''.join([i if i.isalpha() or i.isspace() else ' ' for i in text])
             words = cleaned_line.split(" ")
@@ -94,17 +91,14 @@ if __name__ == "__main__":
             
             if valid_line:
                 filtered_results.append(task)
-                if "acc" in task:
-                    results_by_category[task_description].append(extract_accuracy(task))
-                elif "perplexity" in task:
-                    results_by_category[task_description].append(task["perplexity"])
+                results_by_category[task_description].append(extract_accuracy(task))
 
         with open(output_file, "w") as f:
             json.dump(filtered_results, f)
     
     # if there is a file ending in _results.json load it
     results_file = [f for f in os.listdir(args.evaluation_result) if f.endswith("_results.json")]
-    assert len(results_file) == 1, f"There should be exactly one cummulative results file - there is currently {len(results_file)}"
+    assert len(results_file) == 1, "There should be exactly one cummulative results file"
     results_file = results_file[0]
     results = json.load(open(os.path.join(args.evaluation_result, results_file), "r"))
 

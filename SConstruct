@@ -75,7 +75,7 @@ vars.AddVariables(
     ("MEMORY", "", "64GB"),
     
     # Evaluation
-    ("TASKS", "", ["blimp"]), # , "blimp"]),#  "historical_cloze"]),
+    ("TASKS", "", ["blimp", "historical_cloze", "historical_mp_updated"]), # , "blimp"]),#  "historical_cloze"]),
     ("TASKS_TO_ACCUMULATE", "", ["historical_cloze"]),
     ("LOCAL_MODEL", "", False),
     ("TIMESLICE_PARAMS", "", 
@@ -87,10 +87,11 @@ vars.AddVariables(
                     "work_times/1750_1820/data.test"
                 ],
                 "models": [
-                    {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1750_1820"},
-                    {"model_name": "baby_llama", "model_path": "Hplm/student_model_1750_1820"},
-                    {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1750_1820_random_init"}
-                    # {"model_name": "test_llama", "model_path": "JLTastet/baby-llama-2-345m"},
+                    # {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1750_1820"},
+                    # {"model_name": "baby_llama", "model_path": "Hplm/student_model_1750_1820"},
+                    # {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1750_1820_random_init"}
+                    {"model_name": "baby_llama_2_baseline", "model_path": "JLTastet/baby-llama-2-345m"},
+                    {"model_name": "llama_8B_baseline", "model_path": "${DATA_ROOT}/models/llama3/Meta-Llama-3-8B-converted"},
                 ]
             },
             "1820_1850": {
@@ -100,47 +101,55 @@ vars.AddVariables(
                     "work_times/1820_1850/data.test"
                 ],
                 "models": [
-                    {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1820_1850"},
-                    {"model_name": "baby_llama", "model_path": "Hplm/student_model_1820_1850"},
-                    {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1820_1850_random_init"}
+                    # {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1820_1850"},
+                    # {"model_name": "baby_llama", "model_path": "Hplm/student_model_1820_1850"},
+                    # {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1820_1850_random_init"},
+                    {"model_name": "baby_llama_2_baseline", "model_path": "JLTastet/baby-llama-2-345m"},
+                    {"model_name": "llama_8B_baseline", "model_path": "${DATA_ROOT}/models/llama3/Meta-Llama-3-8B-converted"},
                 ]
             },
-            # "1850_1880": {
-            #     "train_dev_test": [
-            #         "work_times/1850_1880/data.train",
-            #         "work_times/1850_1880/data.dev",
-            #         "work_times/1850_1880/data.test"
-            #     ],
-            #     "models": [
-            #         {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1850_1880"},
-            #         {"model_name": "baby_llama", "model_path": "Hplm/student_model_1850_1880"},
-            #         {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1850_1880_random_init"}
-            #     ]
-            # },
-            # "1880_1910": {
-            #     "train_dev_test": [
-            #         "work_times/1880_1910/data.train",
-            #         "work_times/1880_1910/data.dev",
-            #         "work_times/1880_1910/data.test"
-            #     ],
-            #     "models": [
-            #         {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1880_1910"},
-            #         {"model_name": "baby_llama", "model_path": "Hplm/student_model_1880_1910"},
-            #         {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1880_1910_random_init"}
-            #     ]
-            # },
-            # "1910_1940": {
-            #     "train_dev_test": [
-            #         "work_times/1910_1940/data.train",
-            #         "work_times/1910_1940/data.dev",
-            #         "work_times/1910_1940/data.test"
-            #     ],
-            #     "models": [
-            #         {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1910_1940"},
-            #         {"model_name": "baby_llama", "model_path": "Hplm/student_model_1910_1940"},
-            #         {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1910_1940_random_init"}
-            #     ]
-            # }
+            "1850_1880": {
+                "train_dev_test": [
+                    "work_times/1850_1880/data.train",
+                    "work_times/1850_1880/data.dev",
+                    "work_times/1850_1880/data.test"
+                ],
+                "models": [
+                    # {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1850_1880"},
+                    # {"model_name": "baby_llama", "model_path": "Hplm/student_model_1850_1880"},
+                    # {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1850_1880_random_init"},
+                    {"model_name": "baby_llama_2_baseline", "model_path": "JLTastet/baby-llama-2-345m"},
+                    {"model_name": "llama_8B_baseline", "model_path": "${DATA_ROOT}/models/llama3/Meta-Llama-3-8B-converted"},
+                ]
+            },
+            "1880_1910": {
+                "train_dev_test": [
+                    "work_times/1880_1910/data.train",
+                    "work_times/1880_1910/data.dev",
+                    "work_times/1880_1910/data.test"
+                ],
+                "models": [
+                    # {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1880_1910"},
+                    # {"model_name": "baby_llama", "model_path": "Hplm/student_model_1880_1910"},
+                    # {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1880_1910_random_init"},
+                    {"model_name": "baby_llama_2_baseline", "model_path": "JLTastet/baby-llama-2-345m"},
+                    {"model_name": "llama_8B_baseline", "model_path": "${DATA_ROOT}/models/llama3/Meta-Llama-3-8B-converted"},
+                ]
+            },
+            "1910_1940": {
+                "train_dev_test": [
+                    "work_times/1910_1940/data.train",
+                    "work_times/1910_1940/data.dev",
+                    "work_times/1910_1940/data.test"
+                ],
+                "models": [
+                    # {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1910_1940"},
+                    # {"model_name": "baby_llama", "model_path": "Hplm/student_model_1910_1940"},
+                    # {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1910_1940_random_init"},
+                    {"model_name": "baby_llama_2_baseline", "model_path": "JLTastet/baby-llama-2-345m"},
+                    {"model_name": "llama_8B_baseline", "model_path": "${DATA_ROOT}/models/llama3/Meta-Llama-3-8B-converted"},
+                ]
+            }
             
             
         }

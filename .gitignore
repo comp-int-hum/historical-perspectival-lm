@@ -10,3 +10,5 @@ local*
 README2.md
 *pycache*
 *test_load*
+evaluation_pipeline*
+data*
