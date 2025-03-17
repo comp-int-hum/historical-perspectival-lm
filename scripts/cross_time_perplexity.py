@@ -39,8 +39,9 @@ def chunk_reader(fname, chunk_len=10000000):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--models", nargs="+", type=str, help="models")
-    parser.add_argument("--time_data", nargs="+", type=str, help="time description")
-    parser.add_argument("--test_sets", nargs="+", type=str, help="train_sets")
+    parser.add_argument("--model_names", nargs="+", type=str, help="model names")
+    parser.add_argument("--test_sets", nargs="+", type=str, help="test_sets")
+    parser.add_argument("--test_set_names", nargs="+", type=str, help="time description of test sets")
     parser.add_argument("--output", type=str, default="results.json", help="output file")
     args = parser.parse_args()
 
@@ -70,15 +71,15 @@ if __name__ == "__main__":
     output_directory = os.path.dirname(args.output)
 
     results = {}
-    for model_file, model_time in zip(args.models, args.time_data):
+    for model_file, model_name in zip(args.models, args.model_names):
         model = AutoModelForCausalLM.from_pretrained(model_file, torch_dtype=torch.float16)
         tokenizer = AutoTokenizer.from_pretrained(model_file)
         data_collator = DataCollatorForLanguageModeling(
             tokenizer=tokenizer, mlm=False,
         )
 
-        results[model_time] = {}
-        for test_set, test_time in zip(args.test_sets, args.time_data):
+        results[model_name] = {}
+        for test_set, test_set_time in zip(args.test_sets, args.test_set_names):
             encoded = []
             for chunk in chunk_reader(test_set):
                 enc_chunk = tokenizer.encode(chunk)
@@ -98,7 +99,7 @@ if __name__ == "__main__":
 
             res_1 = model_trainer.evaluate()
 
-            results[model_time][test_time] = res_1
+            results[model_name][test_set_time] = res_1
             del model_trainer
         del model
         del tokenizer
@@ -106,22 +107,22 @@ if __name__ == "__main__":
 
     
     cleaned_model = {}
-    for model_time in results:
-        cleaned_model[model_time] = []
-        for test_time in results[model_time]:
-            start_time = test_time.split("_")[0]
-            end_time = test_time.split("_")[1]
-            loss = results[model_time][test_time]["eval_loss"]
+    for model_name in results:
+        cleaned_model[model_name] = []
+        for test_set_time in results[model_name]:
+            start_time = test_set_time.split("_")[0]
+            end_time = test_set_time.split("_")[1]
+            loss = results[model_name][test_set_time]["eval_loss"]
             perplexity = math.exp(loss)
             midpoint = (int(start_time) + int(end_time)) / 2
-            cleaned_model[model_time].extend([(perplexity, midpoint)])
+            cleaned_model[model_name].extend([(perplexity, midpoint)])
 
     
 
-    for model_time in cleaned_model:
-        x = [i[1] for i in cleaned_model[model_time]]
-        y = [i[0] for i in cleaned_model[model_time]]
-        plt.plot(x, y, label=f"model {model_time}")
+    for model_name in cleaned_model:
+        x = [i[1] for i in cleaned_model[model_name]]
+        y = [i[0] for i in cleaned_model[model_name]]
+        plt.plot(x, y, label=f"model {model_name}")
     plt.ylabel("Perplexity")
     plt.xlabel("Time")
     plt.legend()

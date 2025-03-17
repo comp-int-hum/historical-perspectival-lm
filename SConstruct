@@ -327,9 +327,9 @@ env.Append(
             action = (
                 "python scripts/cross_time_perplexity.py "
                 "--models ${MODELS} "
+                "--model_names ${MODEL_NAMES} "
                 "--test_sets ${TEST_SETS} "
-                "--tokenizers ${TOKENIZERS} "
-                "--time_data ${TIME_DATA} "
+                "--test_set_names ${TEST_SET_NAMES} "
                 "--output ${TARGET}"
             )
         ),
@@ -507,12 +507,23 @@ for task_name, task_outputs_by_filter in evaluation_results.items():
 #       for slice, slice_params in env["TIMESLICE_MODELS"].items()]
 # )
 
+model_paths = [model["model_path"] for params in env["TIMESLICE_PARAMS"].values() for model in params["models"]]
+model_names = [model["model_name"] for params in env["TIMESLICE_PARAMS"].values() for model in params["models"]]
+test_sets = [params["train_dev_test"][2] for params in env["TIMESLICE_PARAMS"].values()]
+test_set_names = [env["TIMESLICE_PARAMS"].keys()]
+
+print("MODEL_PATHS", model_paths)
+print("MODEL_NAMES", model_names)
+print("TEST_SETS", test_sets)
+print("TEST_SET_NAMES", test_set_names)
+
 # env.CrossTimePerplexity(
-#     source =[], # [all_models, all_test_sets, all_tokenizers],
+#     source = [],
 #     target = "${ORIGINAL_WORK_DIR}/cross_time_perplexity/results.json",
-#     TIME_DATA = all_time_data,
-#     MODELS = all_models,
-#     TEST_SETS = all_test_sets,
+#     MODELS = model_paths,
+#     MODEL_NAMES = model_names,
+#     TEST_SETS = test_sets,
+#     TEST_SET_NAMES = test_set_names,
 #     TOKENIZERS = None,
 #     **gpu_task_config("CrossTimePerplexity", "03:30:00", "48GB")
 # )
