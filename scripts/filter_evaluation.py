@@ -4,6 +4,19 @@ import shutil
 import json
 import math
 
+
+def mean(arr):
+    return sum(arr) / len(arr)
+
+def sample_stddev(arr):
+    mu = mean(arr)
+    return math.sqrt(sum([(x - mu) ** 2 for x in arr]) / (len(arr) - 1))
+
+
+def mean_stderr(arr):
+    return sample_stddev(arr) / math.sqrt(len(arr))
+
+
 # this is a very simple script to start the blimp execution
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -16,13 +29,6 @@ if __name__ == "__main__":
 
     def extract_accuracy(task):
         return task["acc"]
-    
-    def get_average_and_stderr(accuracies):
-        if len(accuracies) == 0:
-            return None, None
-        mean = sum(accuracies) / len(accuracies)
-        sem_prop = math.sqrt(mean * (1 - mean) / len(accuracies))
-        return mean, sem_prop
     
     args.evaluation_result = os.path.dirname(args.evaluation_result)
     
@@ -102,7 +108,7 @@ if __name__ == "__main__":
                     results_by_category[task_description].append(task["perplexity"])
 
         with open(output_file, "w") as f:
-            json.dump(filtered_results, f)
+            json.dump(filtered_results, f, indent=2)
     
     # if there is a file ending in _results.json load it
     results_file = [f for f in os.listdir(args.evaluation_result) if f.endswith("_results.json")]
@@ -120,22 +126,22 @@ if __name__ == "__main__":
     all_accuracies = []
     for accuracies in results_by_category.values():
         all_accuracies.extend(accuracies)
-    mean, stderr = get_average_and_stderr(all_accuracies)
+    mean_, stderr = mean(all_accuracies), mean_stderr(all_accuracies)
 
     if "groups" in results:
-        results["groups"][cummulative_result_descriptor]["acc,none"] = mean
+        results["groups"][cummulative_result_descriptor]["acc,none"] = mean_
         results["groups"][cummulative_result_descriptor]["acc_stderr,none"] = stderr
-        results["results"][cummulative_result_descriptor]["acc,none"] = mean
+        results["results"][cummulative_result_descriptor]["acc,none"] = mean_
         results["results"][cummulative_result_descriptor]["acc_stderr,none"] = stderr
 
     for task, accuracies in results_by_category.items():
-        mean, stderr = get_average_and_stderr(accuracies)
-        results["results"][task]["acc,none"] = mean
+        mean_, stderr = mean(accuracies), mean_stderr(accuracies)
+        results["results"][task]["acc,none"] = mean_
         results["results"][task]["acc_stderr,none"] = stderr
     
     # write the results to a file
     with open(os.path.join(args.output, results_file), "w") as f:
-        json.dump(results, f)
+        json.dump(results, f, indent=2)
 
     print(words_that_caused_error)
 
