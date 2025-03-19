@@ -21,7 +21,7 @@ if __name__ == "__main__":
     print(args.tasks)
     command = ("python -m lm_eval "
                 "--model hf --model_args "
-                f"pretrained={model_path},backend='causal',dtype='float' "
+                f"pretrained={model_path},backend='causal',dtype='float16' "
                 f"--tasks {', '.join(args.tasks)} "
                 "--device cuda:0 "
                 "--batch_size 512 "
