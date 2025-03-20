@@ -75,8 +75,8 @@ vars.AddVariables(
     ("MEMORY", "", "64GB"),
     
     # Evaluation
-    ("TASKS", "", ["blimp", "historical_cloze", "historical_mp_updated"]), # , "blimp"]),#  "historical_cloze"]),
-    ("TASKS_TO_ACCUMULATE", "", ["historical_cloze"]),
+    ("TASKS", "", ["cloze_task_topk"]), #  , "historical_mp_updated"]), # , "blimp"]),#  "historical_cloze"]),
+    ("TASKS_TO_ACCUMULATE", "", ["cloze_task_topk"]),
     ("LOCAL_MODEL", "", False),
     ("TIMESLICE_PARAMS", "", 
         {
@@ -87,11 +87,8 @@ vars.AddVariables(
                     "work_times/1750_1820/data.test"
                 ],
                 "models": [
-                    # {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1750_1820"},
-                    # {"model_name": "baby_llama", "model_path": "Hplm/student_model_1750_1820"},
-                    # {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1750_1820_random_init"}
-                    {"model_name": "baby_llama_2_baseline", "model_path": "JLTastet/baby-llama-2-345m"},
-                    {"model_name": "llama_8B_baseline", "model_path": "${DATA_ROOT}/models/llama3/Meta-Llama-3-8B-converted"},
+                    {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1750_1820"},
+                    {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1750_1820_random_init"}
                 ]
             },
             "1820_1850": {
@@ -101,11 +98,8 @@ vars.AddVariables(
                     "work_times/1820_1850/data.test"
                 ],
                 "models": [
-                    # {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1820_1850"},
-                    # {"model_name": "baby_llama", "model_path": "Hplm/student_model_1820_1850"},
-                    # {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1820_1850_random_init"},
-                    {"model_name": "baby_llama_2_baseline", "model_path": "JLTastet/baby-llama-2-345m"},
-                    {"model_name": "llama_8B_baseline", "model_path": "${DATA_ROOT}/models/llama3/Meta-Llama-3-8B-converted"},
+                    {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1820_1850"},
+                    {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1820_1850_random_init"},
                 ]
             },
             "1850_1880": {
@@ -115,11 +109,8 @@ vars.AddVariables(
                     "work_times/1850_1880/data.test"
                 ],
                 "models": [
-                    # {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1850_1880"},
-                    # {"model_name": "baby_llama", "model_path": "Hplm/student_model_1850_1880"},
-                    # {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1850_1880_random_init"},
-                    {"model_name": "baby_llama_2_baseline", "model_path": "JLTastet/baby-llama-2-345m"},
-                    {"model_name": "llama_8B_baseline", "model_path": "${DATA_ROOT}/models/llama3/Meta-Llama-3-8B-converted"},
+                    {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1850_1880"},
+                    {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1850_1880_random_init"},
                 ]
             },
             "1880_1910": {
@@ -129,11 +120,8 @@ vars.AddVariables(
                     "work_times/1880_1910/data.test"
                 ],
                 "models": [
-                    # {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1880_1910"},
-                    # {"model_name": "baby_llama", "model_path": "Hplm/student_model_1880_1910"},
-                    # {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1880_1910_random_init"},
-                    {"model_name": "baby_llama_2_baseline", "model_path": "JLTastet/baby-llama-2-345m"},
-                    {"model_name": "llama_8B_baseline", "model_path": "${DATA_ROOT}/models/llama3/Meta-Llama-3-8B-converted"},
+                    {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1880_1910"},
+                    {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1880_1910_random_init"},
                 ]
             },
             "1910_1940": {
@@ -143,17 +131,19 @@ vars.AddVariables(
                     "work_times/1910_1940/data.test"
                 ],
                 "models": [
-                    # {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1910_1940"},
-                    # {"model_name": "baby_llama", "model_path": "Hplm/student_model_1910_1940"},
-                    # {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1910_1940_random_init"},
-                    {"model_name": "baby_llama_2_baseline", "model_path": "JLTastet/baby-llama-2-345m"},
-                    {"model_name": "llama_8B_baseline", "model_path": "${DATA_ROOT}/models/llama3/Meta-Llama-3-8B-converted"},
+                    {"model_name": "dora_llama", "model_path": "Hplm/dora_llama_model_1910_1940"},
+                    {"model_name": "baby_llama_rand_init", "model_path": "Hplm/student_model_1910_1940_random_init"},
                 ]
             }
             
-            
         }
     ),
+    ("GENERAL_BASELINES", "",
+        [
+            {"model_name": "baby_llama_2_baseline", "model_path": "JLTastet/baby-llama-2-345m"},
+            {"model_name": "llama_8B_baseline", "model_path": "${DATA_ROOT}/models/llama3/Meta-Llama-3-8B-converted"},
+        ]
+    )
 )
 
 env = Environment(variables=vars)
@@ -275,7 +265,8 @@ env.Append(
             action = (
                 "python scripts/start_evaluation.py "
                 "--model ${SOURCES[0]} "
-                f"{'--local_model ' if env['LOCAL_MODEL'] else ''}"  
+                f"{'--local_model ' if env['LOCAL_MODEL'] else ''}"
+                "--cuda_num ${CUDA} "
                 "--tasks ${TASK} "
                 "--output ${TARGET}"
             ),
@@ -364,12 +355,14 @@ env.Append(
                 "--output_directory ${TARGET}"
             )
         ),
-        "CombineOutputs" : Builder(
+        "CombineClozeOutputs" : Builder(
             action = (
-                "python scripts/combine_outputs.py "
+                "python scripts/combine_cloze_outputs.py "
                 "--data ${SOURCES} "
                 "--model_names ${MODEL_NAMES} "
-                "--output ${TARGET}"
+                "--doc_filter ${DOC_FILTER} "
+                "--args_to_accumulate ${ARGS_TO_ACCUMULATE} "
+                "--output_file ${TARGET}"
             )
         ),
         "BucketOutputs": Builder(
@@ -384,6 +377,7 @@ env.Append(
             action = (
                 "python scripts/calculate_bucket_statistics.py "
                 "--bucketed_data ${SOURCES} "
+                "--key_list ${KEY_LIST} "
                 "--output_file ${TARGET}"	
             )
         )
@@ -419,75 +413,179 @@ evaluation_results = {}
 all_training_texts = [slice_params["train_dev_test"][0] for slice_params in env["TIMESLICE_PARAMS"].values()]
 
 # Iterate over tasks
-for task_name in env.get("TASKS", []):
+# for task_name in env.get("TASKS", []):
     
-    task_by_filters = {"base": defaultdict(list), "filtered": defaultdict(list), "maximal_filtered": defaultdict(list)}
-    eval_dir = f"{env['EVAL_DIR']}/{task_name}"
+#     task_by_filters = {"base": defaultdict(list), "filtered": defaultdict(list), "maximal_filtered": defaultdict(list)}
+#     eval_dir = f"{env['EVAL_DIR']}/{task_name}"
     
-    # Iterate over time slices
-    for time_slice, slice_params in env["TIMESLICE_PARAMS"].items():
+#     # Iterate over time slices
+#     for time_slice, slice_params in env["TIMESLICE_PARAMS"].items():
         
-        # Iterate available models (dora, baby, baby_rand_init)
-        for model_params in slice_params["models"]:
-            model_name = model_params["model_name"]
+#         # Iterate available models (dora, baby, baby_rand_init)
+#         for model_params in slice_params["models"]:
+#             model_name = model_params["model_name"]
             
-            task_result = env.START_EVALUATION(
-                source = [model_params["model_path"]],
-                target = f"{eval_dir}/base/{time_slice}/{model_name}/{task_name}_results.json",
-                TASK = task_name,
-                **gpu_task_config(f"{task_name}_{model_name}", "01:30:00", "24GB")
-            )
-            filtered_result = env.FILTER_EVALUATION(
-                source = [task_result, slice_params["train_dev_test"][0]],
-                target = f"{eval_dir}/filtered/{time_slice}/{model_name}/{task_name}_results.json",
-                MIN_OCCURRENCE = env["MIN_OCCURRENCE_EVALUATION"],
-                **cpu_task_config(f"FILTER_{task_name}_{model_name}", "00:30:00", "24GB")
-            )
-            maximal_filtered_result = env.FILTER_EVALUATION(
-                source = [task_result, all_training_texts],
-                target = f"{eval_dir}/maximal_filtered/{time_slice}/{model_name}/{task_name}_results.json",
-                MIN_OCCURRENCE = env["MIN_OCCURRENCE_EVALUATION"],
-                **cpu_task_config(f"MAX_FILTER_{task_name}_{model_name}", "00:30:00", "24GB")
-            )
+#             task_result = env.START_EVALUATION(
+#                 source = [model_params["model_path"]],
+#                 target = f"{eval_dir}/base/{time_slice}/{model_name}/{task_name}_results.json",
+#                 TASK = task_name,
+#                 CUDA = 0,
+#                 **gpu_task_config(f"{task_name}_{model_name}", "01:30:00", "24GB")
+#             )
+#             # filtered_result = env.FILTER_EVALUATION(
+#             #     source = [task_result, slice_params["train_dev_test"][0]],
+#             #     target = f"{eval_dir}/filtered/{time_slice}/{model_name}/{task_name}_results.json",
+#             #     MIN_OCCURRENCE = env["MIN_OCCURRENCE_EVALUATION"],
+#             #     **cpu_task_config(f"FILTER_{task_name}_{model_name}", "00:30:00", "24GB")
+#             # )
+#             # maximal_filtered_result = env.FILTER_EVALUATION(
+#             #     source = [task_result, all_training_texts],
+#             #     target = f"{eval_dir}/maximal_filtered/{time_slice}/{model_name}/{task_name}_results.json",
+#             #     MIN_OCCURRENCE = env["MIN_OCCURRENCE_EVALUATION"],
+#             #     **cpu_task_config(f"MAX_FILTER_{task_name}_{model_name}", "00:30:00", "24GB")
+#             # )
             
-            # Update based on filters
-            task_by_filters["base"][time_slice].append({"model_name": model_name, "result": task_result})
-            task_by_filters["filtered"][time_slice].append({"model_name": model_name, "result": filtered_result})
-            task_by_filters["maximal_filtered"][time_slice].append({"model_name": model_name, "result": maximal_filtered_result})
+#             # Update based on filters
+#             task_by_filters["base"][time_slice].append({"model_name": model_name, "result": task_result})
+#             # task_by_filters["filtered"][time_slice].append({"model_name": model_name, "result": filtered_result})
+#             # task_by_filters["maximal_filtered"][time_slice].append({"model_name": model_name, "result": maximal_filtered_result})
         
-    evaluation_results[task_name] = task_by_filters
+#         # for baseline_model in env["GENERAL_BASELINES"]:
+#         #     model_name = baseline_model["model_name"]
+            
+#         #     task_result = env.START_EVALUATION(
+#         #         source = [model_params["model_path"]],
+#         #         target = f"{eval_dir}/base/general_baselines/{model_name}/{task_name}_results.json",
+#         #         TASK = task_name,
+#         #         **gpu_task_config(f"{task_name}_{model_name}", "01:30:00", "24GB")
+#         #     )
+            
+#         #     maximal_filtered_result = env.FILTER_EVALUATION(
+#         #         source = [task_result, all_training_texts],
+#         #         target = f"{eval_dir}/maximal_filtered/general_baselines/{model_name}/{task_name}_results.json",
+#         #         MIN_OCCURRENCE = env["MIN_OCCURRENCE_EVALUATION"],
+#         #         **cpu_task_config(f"MAX_FILTER_{task_name}_{model_name}", "00:30:00", "24GB")
+#         #     )
+            
+#         #     task_by_filters["base"]["general_baseline"].append({"model_name": model_name, "result": task_result})
+#         #     task_by_filters["maximal_filtered"]["general_baseline"].append({"model_name": model_name, "result": maximal_filtered_result})
+            
+            
+#     evaluation_results[task_name] = task_by_filters
 
 # Accumulate over models for each task and filters
 
+evaluation_results = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
+# Iterate through files in the accumulated results directory
+accumulated_results_path = env["EVAL_DIR"]
+
+for task_name in os.listdir(accumulated_results_path):
+    # print(f"Task name: {task_name}")
+    task_path = os.path.join(accumulated_results_path, task_name)
+    if not os.path.isdir(task_path):  # Skip non-directory files
+        continue
+
+    for filter_name in os.listdir(task_path):
+        # print(f"Filter name: {filter_name}")
+        filter_path = os.path.join(task_path, filter_name)
+        if not os.path.isdir(filter_path):
+            continue
+
+        for ts_name in os.listdir(filter_path):
+            # print(f"Filename: {ts_name}")
+            ts_path = os.path.join(filter_path, ts_name)
+            
+            if not os.path.isdir(ts_path):
+                continue
+            
+            for model_name in os.listdir(ts_path):
+                model_folder_path = os.path.join(ts_path, model_name)
+                # print(f"Model folder path: {model_folder_path}")
+                if not os.path.isdir(model_folder_path):
+                    continue
+                
+                for file_name in os.listdir(model_folder_path):
+                    file_path = os.path.join(model_folder_path, file_name)
+                    # print(f"File path: {file_path}")
+                    if file_name.endswith("_results.json"):
+                        evaluation_results[task_name][filter_name][ts_name].append({
+                            "model_name": f"{model_name}_{ts_name}",
+                            "result": file_path
+                        })
+                # if ts_name.endswith("_results.json"):  # Ensuring we only pick relevant files
+                #     time_slice = ts_name.split("_")[0]  # Extract time slice from filename
+                    
+
+                #     with open(file_path, "r") as f:
+                #         file_data = json.load(f)
+
+                #     for model_entry in file_data:
+                #         print(f"Model entry: {model_entry}")
+                #         evaluation_results[task_name][filter_name][time_slice].append({
+                #             "model_name": model_entry.get("model_name"),
+                #             "result": file_path  # Storing the file path as 'result'
+                #         })
+# print(dict(evaluation_results))
 # Tasks --> filters --> time-slices --> models
 for task_name, task_outputs_by_filter in evaluation_results.items():
     if task_name in env["TASKS_TO_ACCUMULATE"]:
         for filter, filtered_outputs in task_outputs_by_filter.items():
-            for time_slice, time_slice_outputs in filtered_outputs.items():
+            all_model_names = []
+            all_source_files = []
+
+            for time_slice_outputs in filtered_outputs.values():
+                all_model_names.extend(x["model_name"] for x in time_slice_outputs)
+                all_source_files.extend(x["result"] for x in time_slice_outputs)
+
+            combined_filtered_outputs = env.CombineClozeOutputs(
+                source=all_source_files,
+                target=f"${{EVAL_DIR}}/accumulated_results/{task_name}/{filter}/{task_name}_{filter}_results.json",
+                MODEL_NAMES=list(all_model_names),  # Ensure unique model names
+                DOC_FILTER = ["sense_start_year"],
+                ARGS_TO_ACCUMULATE = ["resps", "filtered_resps", "perplexity", "acc", "reciprocal_rank", "top_1", "top_5", "top_10", "top_20", "top_50", "top_100"],
+                **cpu_task_config("CombineOutputs", "2:30:00", "24GB")
+            )
+            
+            bucketed_filtered_outputs = env.BucketOutputs(
+                source = combined_filtered_outputs,
+                target = f"${{EVAL_DIR}}/bucketed_results/{task_name}/{filter}/{task_name}_{filter}_results.json",
+                TIME_BOUNDARIES = [1750, 1820, 1850, 1880, 1910, 1940],
+                **cpu_task_config("BucketOutputs", "2:30:00", "24GB")
+            )
+            
+            bucketed_statistics = env.CalculateBucketStatistics(
+                source = bucketed_filtered_outputs,
+                target = f"${{EVAL_DIR}}/bucketed_statistics/{task_name}/{filter}/{task_name}_{filter}_stats.json",
+                KEY_LIST = ["perplexity", "acc", "top_1", "top_5", "top_10", "top_20", "top_50", "top_100"],
+                **cpu_task_config("CalculateBucketStatistics", "2:30:00", "24GB")
+            )
+
+            # for time_slice, time_slice_outputs in filtered_outputs.items():
                 
-                model_names = [x["model_name"] for x in time_slice_outputs]
-                source_files = [x["result"] for x in time_slice_outputs]
+            #     model_names = [x["model_name"] for x in time_slice_outputs]
+            #     source_files = [x["result"] for x in time_slice_outputs]
                 
-                combined_filtered_outputs = env.CombineOutputs(
-                    source = source_files,
-                    target = f"${{EVAL_DIR}}/accumulated_results/{task_name}/{filter}/{time_slice}/{task_name}_{filter}_results.json",
-                    MODEL_NAMES = model_names,
-                    **cpu_task_config("CombineOutputs", "2:30:00", "24GB")
-                )
+            #     combined_filtered_outputs = env.CombineOutputs(
+            #         source = source_files,
+            #         target = f"${{EVAL_DIR}}/accumulated_results/{task_name}/{filter}/{time_slice}/{task_name}_{filter}_results.json",
+            #         MODEL_NAMES = model_names,
+            #         **cpu_task_config("CombineOutputs", "2:30:00", "24GB")
+            #     )
                 
-                bucketed_filtered_outputs = env.BucketOutputs(
-                    source = combined_filtered_outputs,
-                    target = f"${{EVAL_DIR}}/bucketed_results/{task_name}/{filter}/{time_slice}/{task_name}_{filter}_results.json",
-                    TIME_BOUNDARIES = [1750, 1820, 1850, 1880, 1910, 1940],
-                    **cpu_task_config("BucketOutputs", "2:30:00", "24GB")
-                )
+                # bucketed_filtered_outputs = env.BucketOutputs(
+                #     source = combined_filtered_outputs,
+                #     target = f"${{EVAL_DIR}}/bucketed_results/{task_name}/{filter}/{time_slice}/{task_name}_{filter}_results.json",
+                #     TIME_BOUNDARIES = [1750, 1820, 1850, 1880, 1910, 1940],
+                #     **cpu_task_config("BucketOutputs", "2:30:00", "24GB")
+                # )
                 
-                bucketed_statistics = env.CalculateBucketStatistics(
-                    source = bucketed_filtered_outputs,
-                    target = f"${{EVAL_DIR}}/bucketed_statistics/{task_name}/{filter}/{time_slice}/{task_name}_{filter}_stats.json",
-                    **cpu_task_config("CalculateBucketStatistics", "2:30:00", "24GB")
-                )
+                # bucketed_statistics = env.CalculateBucketStatistics(
+                #     source = bucketed_filtered_outputs,
+                #     target = f"${{EVAL_DIR}}/bucketed_statistics/{task_name}/{filter}/{time_slice}/{task_name}_{filter}_stats.json",
+                #     **cpu_task_config("CalculateBucketStatistics", "2:30:00", "24GB")
+                # )
+                
 # all_blimp = [x[0] for x in all_evaluation_results["blimp"]]
 # all_identifiers = [x[1] for x in all_evaluation_results["blimp"]]
 
@@ -507,15 +605,24 @@ for task_name, task_outputs_by_filter in evaluation_results.items():
 #       for slice, slice_params in env["TIMESLICE_MODELS"].items()]
 # )
 
-model_paths = [model["model_path"] for params in env["TIMESLICE_PARAMS"].values() for model in params["models"]]
-model_names = [model["model_name"] for params in env["TIMESLICE_PARAMS"].values() for model in params["models"]]
-test_sets = [params["train_dev_test"][2] for params in env["TIMESLICE_PARAMS"].values()]
-test_set_names = [env["TIMESLICE_PARAMS"].keys()]
+# model_paths = []
+# model_names = []
+# for time_slice_name, params in env["TIMESLICE_PARAMS"].items():
+#     for model in params["models"]:
+#         model_paths.append(model["model_path"])
+#         model_names.append(model["model_name"] + "_" + time_slice_name)
+        
+# # model_paths = [model["model_path"] for params in env["TIMESLICE_PARAMS"].values() for model in params["models"]]
+# # model_names = [model["model_name"] for params in env["TIMESLICE_PARAMS"].values() for model in params["models"]]
 
-print("MODEL_PATHS", model_paths)
-print("MODEL_NAMES", model_names)
-print("TEST_SETS", test_sets)
-print("TEST_SET_NAMES", test_set_names)
+
+# test_sets = [params["train_dev_test"][2] for params in env["TIMESLICE_PARAMS"].values()]
+# test_set_names = [env["TIMESLICE_PARAMS"].keys()]
+
+# print("MODEL_PATHS", model_paths)
+# print("MODEL_NAMES", model_names)
+# print("TEST_SETS", test_sets)
+# print("TEST_SET_NAMES", test_set_names)
 
 # env.CrossTimePerplexity(
 #     source = [],
@@ -549,3 +656,4 @@ csv = env.HISTORICAL_to_CSV(
 
 
 
+ 
