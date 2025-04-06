@@ -1,7 +1,7 @@
 import os
 import os.path
 import json
-from steamroller_utils import cpu_task_config, gpu_task_config
+from utils.steamroller_utils import cpu_task_config, gpu_task_config
 from steamroller import Environment
 from collections import defaultdict
 
@@ -17,6 +17,8 @@ vars.AddVariables(
 
     # Evaluation settings
     ("MIN_OCCURRENCE_EVALUATION", "", 2),
+    ("EVALUATION_TASKS_LIST", "", ["blimp"]),
+    ("EVALUATE_TEACHERS", "", False),
 
     # STEAMROLLER settings
     ("STEAMROLLER_ENGINE", "", "slurm"),
@@ -56,6 +58,17 @@ env = Environment(
                 "--output ${TARGET} "
             )
         ),
+        "Calculate_Perplexity" : Builder(
+            action = (
+                "python 2_evaluation/scripts/calculate_perplexity.py "
+                "--model ${MODEL} "
+                "--split ${SPLIT} "
+                "--test_sets ${TEST_SETS} "
+                "--tokenizer ${TOKENIZER} "
+                "--test_splits ${TEST_SPLITS} "
+                "--output ${TARGET}"
+            )
+        ),
         "CrossTimePerplexity" : Builder(
             action = (
                 "python 2_evaluation/scripts/cross_time_perplexity.py "
@@ -83,12 +96,15 @@ for slice, data in training_data.items():
         pretrained_models = pretrained_results[slice]
         all_models.extend([
             ("pretrained_student", pretrained_models["student"], slice, data, 
-            pretrained_models["tokenizer"]), 
-            ("pretrained_teacher_1", pretrained_models["teacher_1"], slice, data, 
-             pretrained_models["tokenizer"]), 
-            ("pretrained_teacher_2", pretrained_models["teacher_2"], slice, data, 
-             pretrained_models["tokenizer"]),
-        ])
+            pretrained_models["tokenizer"])])
+        
+        if env["EVALUATE_TEACHERS"]:
+            all_models.extend([
+                ("pretrained_teacher_1", pretrained_models["teacher_1"], slice, data, 
+                pretrained_models["tokenizer"]), 
+                ("pretrained_teacher_2", pretrained_models["teacher_2"], slice, data, 
+                pretrained_models["tokenizer"]),
+            ])
     if slice in finetuned_results:
         finetuned_models = finetuned_results[slice]
         all_models.extend([
@@ -99,7 +115,7 @@ for slice, data in training_data.items():
 all_evaluation_results = defaultdict(list)
 
 for model_name, model, slice, data, _ in all_models:
-    for task_name in ["blimp", "ewok_filtered", "historical_mp"]:
+    for task_name in env["EVALUATION_TASKS_LIST"]:
         task_result = env.START_EVALUATION(
             source = [model],
             target = "${WORK_DIR}" + f"/{slice}/{model_name}/{task_name}",
@@ -121,7 +137,7 @@ for model_name, model, slice, data, _ in all_models:
         all_evaluation_results[task_name].append((task_result, f"{model_name}_{slice}"))
         all_evaluation_results[task_name].append((filtered_result, f"{model_name}_{slice}_filtered"))
         all_evaluation_results[task_name].append((maximal_filtered_result, f"{model_name}_{slice}_maximal_filtered"))
-
+""""
 all_blimp, all_identifiers = [], []
 if "blimp" in all_evaluation_results:
     all_blimp, all_identifiers = zip(*all_evaluation_results["blimp"])
@@ -132,22 +148,25 @@ env.BLIMP_to_CSV(
         IDENTIFIERS = all_identifiers,
         **cpu_task_config(env,"BLIMP_to_CSV", "00:30:00", "24GB")
     )
+"""
 
-all_models, all_slices, all_data, all_tokenizers = [], [], [], []
-if len(all_models) != 0:
-    _, all_models, all_slices, all_data, all_tokenizers = zip(*all_models)
+all_data_splits = list(training_data.keys())
+all_test_sets = [training_data[slice]["test"] for slice in all_data_splits]
 
-all_test_sets = [data["test"] for data in all_data]
+perplexities = {}
+for model_name, model, slice, data, tokenizer in all_models:
+    perplexities[(model_name, slice)] = env.Calculate_Perplexity(
+        source = [model, all_test_sets, tokenizer],
+        target = "${WORK_DIR}" +f"/{slice}/{model_name}/perplexities.json",
+        MODEL = model,
+        TOKENIZER = tokenizer,
+        SPLIT = slice,
+        TEST_SETS = all_test_sets,
+        TEST_SPLITS = all_data_splits,
+        **gpu_task_config(env,f"Perplexity_{slice}", "01:00:00", "48GB")
+    )
 
-env.CrossTimePerplexity(
-    source = [all_models, all_test_sets, all_tokenizers],
-    target = "${WORK_DIR}/cross_time_perplexity",
-    TIME_DATA = all_slices,
-    MODELS = all_models,
-    TEST_SETS = all_test_sets,
-    TOKENIZERS = all_tokenizers,
-    **gpu_task_config(env,"CrossTimePerplexity", "03:30:00", "48GB")
-)
+
 
 
 

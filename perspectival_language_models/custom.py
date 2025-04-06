@@ -1,10 +1,15 @@
 # RUN settings
+RUN_PRETRAINING = True
+RUN_FINETUNING = False
+RUN_EVALUATION = True
+
+# Data settings
 PROJECT_NAME = "song_lyrics"
 DATA = "LOAD_CUSTOM_DATA"# "DATA_PREPARATION" or "LOAD_CUSTOM_DATA"
 CUSTOM_DATA_DIRECTORY = "custom_data/song_lyrics"
-RUN_PRETRAINING = True
-RUN_FINETUNING = False
-RUN_EVALUATION = False
+
+# Evaluation settings
+EVALUATION_TASKS_LIST = ["blimp"]
 
 # WandB
 USE_WANDB = True

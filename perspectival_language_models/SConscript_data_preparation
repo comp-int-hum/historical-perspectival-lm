@@ -1,7 +1,7 @@
 import os
 import os.path
 import json
-from steamroller_utils import cpu_task_config, gpu_task_config
+from utils.steamroller_utils import cpu_task_config, gpu_task_config
 from steamroller import Environment
 
 
