@@ -16,7 +16,6 @@ if __name__ == "__main__":
     parser.add_argument("--p1_thresh", type=int, default=90, help="Pass 1 similarity threshold")
     parser.add_argument("--p2_thresh", type=int, default=92, help="Pass 2 similarity threshold")
     parser.add_argument("--bd_thresh", type=int, default=5, help="Pass 1 birthday delta threshold")
-    #parser.add_argument("--max_works", type=int, default=1000, help="Maximum numbers of work/author")
     parser.add_argument("--author_omit", nargs="+", default=[], help="Temporary author disable using WD name")
     parser.add_argument("--random_state", type=int, default=29)
     args, rest = parser.parse_known_args()
@@ -101,7 +100,6 @@ if __name__ == "__main__":
         n = 0
         n_w = 0
         print("Omitting authors: {}".format(args.author_omit))
-        #print("Sampling a maximum of {} works per author".format(args.max_works))
         for author in pass_1+pass_2:
             if author["gb_author"] not in seen and author["authorLabel"]["value"] not in args.author_omit:
                 seen.append(author["gb_author"])

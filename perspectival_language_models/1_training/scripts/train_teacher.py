@@ -32,14 +32,12 @@ if __name__ == "__main__":
     parser.add_argument("--wandb_name", type=str, default=None, help="Wandb run name")
     # output
     parser.add_argument("--output_dir", type=str, default=None, help="Path to the output directory")
-
-    parser.add_argument("--limit_train", type=int, default=10000000, help="Limit the training data")
     args = parser.parse_args()
 
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
 
-    seed(args.random_seed) # we fix the same subset for all models
+    seed(args.random_seed)
 
 
     # Override config parameters if provided as command-line arguments
@@ -47,8 +45,6 @@ if __name__ == "__main__":
         config['training']['lr'] = args.lr
 
 
-    # in the original code I had random_chunk = False
-    # random_chunk=True is expected to improve the model performance a bit
     train_dataset = GBDataset(args.train_data, config['data']['seq_length'], random_chunk=True)
 
     if config['training'].get('gpus', None) is not None:
@@ -58,9 +54,6 @@ if __name__ == "__main__":
     print(f"using {config['training']['gpus']} GPUs")
     train_tokens = len(train_dataset) * config['data']['seq_length']
     print(f"train_tokens = {train_tokens/10**6}M")
-    if train_tokens > args.limit_train:
-        train_indices = sample(range(len(train_dataset)), args.limit_train // config['data']['seq_length'])
-        train_dataset = Subset(train_dataset, train_indices)
     full_eval_dataset = GBDataset(args.eval_data, config['data']['seq_length'], offset=0)
 
     

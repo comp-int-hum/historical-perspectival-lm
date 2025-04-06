@@ -34,9 +34,6 @@ if __name__ == "__main__":
         enc_chunk = tokenizer.encode(chunk)
         encoded.extend(enc_chunk)
         
-    #with open(args.input, "rt") as in_split:
-    #    encoded = tokenizer.encode(in_split.read())
-
     logging.info(f"{len(encoded)} tokens saved to {args.output}")
     torch.save(torch.tensor(encoded), args.output)
 

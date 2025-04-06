@@ -39,29 +39,31 @@ if env["DATA"] == "LOAD_CUSTOM_DATA":
             "dev": env.File(os.path.join(env["CUSTOM_DATA_DIRECTORY"], subdirectory, "data.dev")),
         }
 elif env["DATA"] == "DATA_PREPARATION":
-    SConscript("0_data_preparation/SConscript_data_preparation")
+    SConscript("SConscript_data_preparation")
     Import("training_data")
 else:
     raise ValueError("DATA must be set to either LOAD_CUSTOM_DATA or DATA_PREPARATION")
 
+
 Export("training_data", training_data)
 
+
 if env["RUN_PRETRAINING"]:
-    SConscript("1_training/SConscript_pretraining")
+    SConscript("SConscript_pretraining")
     Import("pretrained_results")
 else:
     pretrained_results = {}
 Export("pretrained_results", pretrained_results)
 
 if env["RUN_FINETUNING"]:
-    SConscript("1_training/SConscript_finetuning")
+    SConscript("SConscript_finetuning")
     Import("finetuned_results")
 else:
     finetuned_results = {}
 Export("finetuned_results", finetuned_results)
 
 if env["RUN_EVALUATION"]:
-    SConscript("2_evaluation/SConscript_evaluation")
+    SConscript("SConscript_evaluation")
 
 
 

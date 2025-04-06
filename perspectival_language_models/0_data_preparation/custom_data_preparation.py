@@ -1,9 +1,12 @@
 import os
-from perspectival_language_models.custom import *
+from custom import *
 
 # Local paths (TO CHANGE)
 DATA_ROOT = os.path.expanduser("~/corpora") 
 GUTENBERG_PATH = os.path.join(DATA_ROOT, "gutenberg/")
+
+WORK_DIR = f"0_data_preparation/work/{PROJECT_NAME}"
+ORIGINAL_WORK_DIR = WORK_DIR
 
 # Time slice ranges
 TIME_SLICES = [(1750, 1820), (1820, 1850), (1850, 1880), (1880, 1910), (1910, 1940)]
@@ -19,7 +22,7 @@ MAX_WORKS = 20
 USE_INFERENCE = True
 WORK_MODEL = "meta-llama/Llama-3.3-70B-Instruct"
 USE_DATES_FILE = True
-DATES_FILE ="data/gb_authors_dates_1950.jsonl"
+DATES_FILE ="0_data_preparation/data/gb_authors_dates_1950.jsonl"
 
 
 

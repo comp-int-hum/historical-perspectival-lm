@@ -17,7 +17,6 @@ if __name__ == "__main__":
         "--input",
         help="Authors and gutenberg works jsonl"
     )
-    #parser.add_argument("--items", dest="items", help="TSV file of items to ask questions about (must have header row).")
     parser.add_argument("--output", dest="output", help="jsonl output of sampled works files")
     parser.add_argument("--max_tokens", dest="max_tokens", type=int, default=100, help="Maximum tokens to generate in response")
     parser.add_argument(

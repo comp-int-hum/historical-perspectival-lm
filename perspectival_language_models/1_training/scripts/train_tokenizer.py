@@ -46,8 +46,6 @@ if __name__ == "__main__":
     tokenizer = GPT2TokenizerFast.from_pretrained(args.output)
 
 
-
-    # text = 'Shiro Okada (岡田志郎, "Okada Shirō", June 9, 1949; Hirakata, Osaka {age 71} - ) is a Japanese guitarist who participate in the Group Sound band, the Ox. His nickname was Shiro (シロー) and his real name is Shiro Okamoto (岡田史郎).'
     text = "The quick brown fox jumps over the lazy dog."
 
     encoded = tokenizer.encode(text)

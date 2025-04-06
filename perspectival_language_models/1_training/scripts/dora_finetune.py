@@ -35,9 +35,8 @@ if __name__ == "__main__":
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
 
-    seed(args.random_seed) # we fix the same subset for all models
+    seed(args.random_seed)
     
-    # model_config = AutoConfig.from_pretrained(args.model_name, attention_dropout = dropout)
     model = AutoModelForCausalLM.from_pretrained(args.model_name,
                                                  torch_dtype=torch.float16)
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_path if args.tokenizer_path else args.model_name)
@@ -56,10 +55,6 @@ if __name__ == "__main__":
     )
     peft_model = get_peft_model(model, dora_config)
 
-    
-    
-    # in the original code I had random_chunk = False
-    # random_chunk=True is expected to improve the model performance a bit
     train_dataset = GBDataset(args.train_data, config['data']['seq_length'], random_chunk=True)
     
     print(f"using {config['training']['gpus']} GPUs")
@@ -95,9 +90,8 @@ if __name__ == "__main__":
         eval_accumulation_steps = 16,
         per_device_train_batch_size = per_device_bsz,
         per_device_eval_batch_size = per_device_bsz,
-        save_total_limit = 3,  # Set to zero to avoid saving
-        warmup_steps = config['training']['warmup_steps'], 
-        # lr_scheduler_type = "cosine",
+        save_total_limit = 3,
+        warmup_steps = config['training']['warmup_steps'],
         learning_rate = float(config['training']['lr']),
         logging_steps = 20,
         fp16 = config['training']['fp16'],
@@ -125,6 +119,4 @@ if __name__ == "__main__":
     
     merged_model = peft_model.merge_and_unload()
     merged_model.save_pretrained(output_dir)
-    # trainer.save_model(output_dir)
-    # LoraModel.merge_and_unload()
     tokenizer.save_pretrained(output_dir)

@@ -1,4 +1,5 @@
 import os
-from perspectival_language_models.custom import *
+from custom import *
 
-
+WORK_DIR = f"2_evaluation/work/{PROJECT_NAME}"
+ORIGINAL_WORK_DIR = WORK_DIR

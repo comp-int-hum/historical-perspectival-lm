@@ -44,8 +44,6 @@ if __name__ == "__main__":
     parser.add_argument("--wandb_name", type=str, default=None, help="Wandb run name")
     # output
     parser.add_argument("--output_dir", help="Path to the output directory")
-    
-    parser.add_argument("--limit_train", type=int, default=10000000, help="Limit the training data")
     args, rest = parser.parse_known_args()
 
 
@@ -56,19 +54,7 @@ if __name__ == "__main__":
     print(torch.cuda.memory_summary())
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
-    
-    """if config['training'].get('gpus', None) is not None:
-        import os
-        print(f"previously using {os.environ.get('CUDA_VISIBLE_DEVICES', None)}")
-        print(f"using {config['training']['gpus']} GPUs")
-        os.environ["CUDA_VISIBLE_DEVICES"] = config['training']['gpus']
-        print(f"now using {os.environ.get('CUDA_VISIBLE_DEVICES', None)}")
-        print(torch.cuda.current_device())
-        torch.cuda.set_device(1)
-        print(torch.cuda.current_device())"""
-
         
-
     tokenizer_path = args.tokenizer_path
     tokenizer = GPT2TokenizerFast.from_pretrained(tokenizer_path)
     tokenizer.bos_token = "<s>"
@@ -97,15 +83,10 @@ if __name__ == "__main__":
     else:
         raise ValueError(f"Model type {config['model']['type']} not supported for student model")
 
-    # in the original code I had random_chunk = False
-    # random_chunk=True is expected to improve the model performance a bit
     train_dataset = GBDataset(args.train_data, config['data']['seq_length'], random_chunk=True)
     full_eval_dataset = GBDataset(args.eval_data, config['data']['seq_length'], offset=0)
 
     token_count = len(train_dataset) * config['data']['seq_length']
-    if token_count > args.limit_train:
-        train_indices = sample(range(len(train_dataset)), args.limit_train // config['data']['seq_length'])
-        train_dataset = Subset(train_dataset, train_indices)
 
     eval_indices = sample(range(len(full_eval_dataset)), config['data']['eval_samples'])
     eval_dataset = Subset(full_eval_dataset, eval_indices)

@@ -15,8 +15,6 @@ if __name__ == "__main__":
     parser.add_argument("--random_state", type=int, default=29)
     args, rest = parser.parse_known_args()
 
-    print(args)
-
     random.seed(args.random_state)
     error_count = 0
     n_works = 0
@@ -39,7 +37,6 @@ if __name__ == "__main__":
                             new_works[work]=gid                
                     except ValueError:
                         error_count += 1
-                        #print("Value Error: {}".format(jline["work_dates"][gid]))
                         continue
                 else:
                     new_works[work]=gid
