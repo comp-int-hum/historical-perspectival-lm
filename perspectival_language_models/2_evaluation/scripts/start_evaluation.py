@@ -13,8 +13,6 @@ if __name__ == "__main__":
     absolute_path_model = os.path.abspath(args.model_dir)
     absolute_path_output = os.path.abspath(args.output)
 
-    #args.tasks = ["historical_minimal_pairs"]
-    print(args.tasks)
     command = ("python -m lm_eval "
                 "--model hf --model_args "
                 f"pretrained={absolute_path_model},backend='causal' "

@@ -118,19 +118,19 @@ for model_name, model, slice, data, _ in all_models:
     for task_name in env["EVALUATION_TASKS_LIST"]:
         task_result = env.START_EVALUATION(
             source = [model],
-            target = "${WORK_DIR}" + f"/{slice}/{model_name}/{task_name}",
+            target = Dir(f"{env['WORK_DIR']}/{slice}/{model_name}/{task_name}"),
             TASK = task_name,
             **gpu_task_config(env,f"{model_name}_{task_name}", "01:30:00", "24GB")
         )
         filtered_result = env.FILTER_EVALUATION(
             source = [task_result, data["train"]],
-            target = "${WORK_DIR}" +f"/{slice}/{model_name}/{task_name}_filtered",
+            target = Dir(f"{env['WORK_DIR']}/{slice}/{model_name}/{task_name}_filtered"),
             MIN_OCCURRENCE = env["MIN_OCCURRENCE_EVALUATION"],
             **cpu_task_config(env,f"FILTER_{model_name}_{task_name}", "00:30:00", "24GB")
         )
         maximal_filtered_result = env.FILTER_EVALUATION(
             source = [task_result, all_train_data],
-            target = "${WORK_DIR}" +f"/{slice}/{model_name}/{task_name}_maximal_filtered",
+            target = Dir(f"{env['WORK_DIR']}/{slice}/{model_name}/{task_name}_maximal_filtered"),
             MIN_OCCURRENCE = env["MIN_OCCURRENCE_EVALUATION"],
             **cpu_task_config(env,f"MAX_FILTER_{model_name}_{task_name}", "00:30:00", "24GB")
         )

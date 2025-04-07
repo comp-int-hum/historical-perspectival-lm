@@ -29,7 +29,7 @@ if __name__ == "__main__":
     def extract_accuracy(task):
         return task["acc"]
     
-    args.evaluation_result = os.path.dirname(args.evaluation_result)
+    print(f"Filtering results in {args.evaluation_result} using {args.data} with min occurrence {args.min_occurrence}")
     
     word_dictionaries = []
     for file in args.data:
@@ -60,8 +60,6 @@ if __name__ == "__main__":
         min_dict[word] = min(d[word] for d in word_dictionaries)
     word_dictionary = min_dict
     
-    
-    args.output = os.path.dirname(args.output)
     if not os.path.exists(args.output):
         os.makedirs(args.output)
 
@@ -76,6 +74,7 @@ if __name__ == "__main__":
         results_by_category[task_description] = []
         
         output_file = os.path.join(args.output, file)
+        print(output_file)
 
         filtered_results = []
 
@@ -110,8 +109,8 @@ if __name__ == "__main__":
             json.dump(filtered_results, f, indent=2)
     
     # if there is a file ending in _results.json load it
-    results_file = [f for f in os.listdir(args.evaluation_result) if f.endswith("_results.json")]
-    assert len(results_file) == 1, "There should be exactly one cummulative results file"
+    results_file = [f for f in os.listdir(args.evaluation_result) if f.endswith("results.json")]
+    assert len(results_file) == 1, f"There should be exactly one cummulative results file in {args.evaluation_result}, found {results_file}/{os.listdir(args.evaluation_result)}"
     results_file = results_file[0]
     results = json.load(open(os.path.join(args.evaluation_result, results_file), "r"))
 
