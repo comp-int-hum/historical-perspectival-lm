@@ -26,13 +26,13 @@ vars.AddVariables(
     ("STUDENT_CONFIG", "", "1_training/config/llama-smoll-345M.yaml"),
 
     # STEAMROLLER settings
-    ("STEAMROLLER_ENGINE", "", "slurm"),
-    ("CPU_QUEUE", "", "parallel"),
-    ("CPU_ACCOUNT", "", "tlippin1"),    
-    ("GPU_QUEUE", "", "a100"),
-    ("GPU_ACCOUNT", "", "tlippin1_gpu"),
+    ("STEAMROLLER_ENGINE", "", ""),
+    ("CPU_QUEUE", "", ""),
+    ("CPU_ACCOUNT", "", ""),    
+    ("GPU_QUEUE", "", ""),
+    ("GPU_ACCOUNT", "", ""),
     ("GPU_COUNT", "", 1),
-    ("MEMORY", "", "64GB")
+    ("MEMORY", "", "64GB"),
 )
 
 env = Environment(

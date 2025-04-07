@@ -40,11 +40,11 @@ vars.AddVariables(
     ("SPLIT_LEVEL", "", "paragraph"),
 
     # Steamroller settings
-    ("STEAMROLLER_ENGINE", "", "slurm"),
-    ("CPU_QUEUE", "", "parallel"),
-    ("CPU_ACCOUNT", "", "tlippin1"),    
-    ("GPU_QUEUE", "", "a100"),
-    ("GPU_ACCOUNT", "", "tlippin1_gpu"),
+    ("STEAMROLLER_ENGINE", "", ""),
+    ("CPU_QUEUE", "", ""),
+    ("CPU_ACCOUNT", "", ""),    
+    ("GPU_QUEUE", "", ""),
+    ("GPU_ACCOUNT", "", ""),
     ("GPU_COUNT", "", 1),
     ("MEMORY", "", "64GB"),
 )
