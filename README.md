@@ -147,7 +147,7 @@ You will need a local copy of the Gutenberg corpus; configure its path in
 GUTENBERG_PATH = "your_local_gutenberg_respository"
 ```
 
-A quantized Llama3 70B model was used to identify work dates. The results were stored in `0_data_preparation/data/gb_authors_dates_1950.jsonl`. This file is not recomputed by default. To force a complete recomputation, set:
+A quantized Llama3 70B model was used to identify work dates. The results were stored in [0_data_preparation/data/gb_authors_dates_1950.jsonl](perspectival_language_models/0_data_preparation/data/gb_authors_dates_1950.jsonl). This file is not recomputed by default. To force a complete recomputation, set:
 
 ```python
 # Model and prompt settings
