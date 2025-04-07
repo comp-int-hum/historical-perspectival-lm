@@ -65,16 +65,16 @@ Alternatively this is the description for a manual setup:
 ### Training On New Data (configuration)
 
 #### Prepare Data
-   To train models on your own data, place the text files into the [custom_data/](perspectival_language_models/custom_data/) directory. For each category, include:
+   To train models on your own data, place the text files into the [custom_data/](custom_data/) directory. For each category, include:
    
    - `data.train`
    - `data.dev`
    - `data.test`
 
-   For example, see [custom_data/song_lyrics](perspectival_language_models/custom_data/song_lyrics), which also contains a preprocessing file ([preprocessing.ipynb](perspectival_language_models/custom_data/song_lyrics/preprocessing.ipynb)).
+   For example, see [custom_data/song_lyrics](custom_data/song_lyrics), which also contains a preprocessing file ([preprocessing.ipynb](custom_data/song_lyrics/preprocessing.ipynb)).
 
    Update 
-   [custom.py](perspectival_language_models/custom.py) 
+   [custom.py](custom.py) 
    to specify where the data is located:
    ```python
    # Data settings
@@ -92,10 +92,10 @@ RUN_PRETRAINING = True
 ```
 
 in 
-[custom.py](perspectival_language_models/custom.py).
+[custom.py](custom.py).
 
 To change the model size or other training parameters, modify the relevant configuration files in `1_training/config` and reference them in 
-[custom_pretraining.py](perspectival_language_models/1_training/custom_pretraining.py), for example:
+[custom_pretraining.py](1_training/custom_pretraining.py), for example:
 
 ```python
 # training configs
@@ -114,7 +114,7 @@ RUN_FINETUNING = True
 ```
 
 in 
-[custom.py](perspectival_language_models/custom.py).
+[custom.py](custom.py).
 
 You also need to specify the base model path and configuration, for example:
 
@@ -138,16 +138,16 @@ DATA = "DATA_PREPARATION"
 ```
 
 in 
-[custom.py](perspectival_language_models/custom.py).
+[custom.py](custom.py).
 
 You will need a local copy of the Gutenberg corpus; configure its path in 
-[custom_data_preparation.py](perspectival_language_models/0_data_preparation/custom_data_preparation.py):
+[custom_data_preparation.py](0_data_preparation/custom_data_preparation.py):
 
 ```python
 GUTENBERG_PATH = "your_local_gutenberg_respository"
 ```
 
-A quantized Llama3 70B model was used to identify work dates. The results were stored in [gb_authors_dates_1950.jsonl](perspectival_language_models/0_data_preparation/data/gb_authors_dates_1950.jsonl). This file is not recomputed by default. To force a complete recomputation, set:
+A quantized Llama3 70B model was used to identify work dates. The results were stored in [gb_authors_dates_1950.jsonl](0_data_preparation/data/gb_authors_dates_1950.jsonl). This file is not recomputed by default. To force a complete recomputation, set:
 
 ```python
 # Model and prompt settings
@@ -155,7 +155,7 @@ USE_DATES_FILE = False
 ```
 
 in 
-[custom_data_preparation.py](perspectival_language_models/0_data_preparation/custom_data_preparation.py).
+[custom_data_preparation.py](0_data_preparation/custom_data_preparation.py).
 
 Alternatively, skip data preparation by directly loading the paper’s training data from `custom_data/historical_data`:
 
@@ -168,7 +168,7 @@ CUSTOM_DATA_DIRECTORY = "custom_data/historical_data"
 #### Training
 
 To train both the pretrained and finetuned models as in the paper, enable both in 
-[custom.py](perspectival_language_models/custom.py):
+[custom.py](custom.py):
 
 ```python
 RUN_PRETRAINING = True
@@ -176,7 +176,7 @@ RUN_FINETUNING = True
 ```
 
 For finetuning on Llama3 8B, specify the local path in 
-[custom_finetuning.py](perspectival_language_models/1_training/custom_finetuning.py):
+[custom_finetuning.py](1_training/custom_finetuning.py):
 
 ```python
 MODEL_PATH = "your_model_path"
@@ -194,7 +194,7 @@ EVALUATION_TASKS_LIST = ["blimp", "cloze_task_topk"]
 ```
 
 in 
-[custom.py](perspectival_language_models/custom.py).
+[custom.py](custom.py).
 
 ### Start Run
 
@@ -205,7 +205,7 @@ scons -Q
 ```
 
 To run via Slurm, adjust Slurm variables in 
-[custom.py](perspectival_language_models/custom.py):
+[custom.py](custom.py):
 
 ```python
 STEAMROLLER_ENGINE = 'slurm'
