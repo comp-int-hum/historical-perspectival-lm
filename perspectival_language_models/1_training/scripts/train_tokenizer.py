@@ -5,6 +5,7 @@ from tokenizers.normalizers import NFKC
 import logging
 from transformers import GPT2TokenizerFast
 import yaml
+import os 
 
 # code restructured from: https://github.com/timinar/BabyLlama/blob/main/cleaning_and_tokenization.ipynb
 
@@ -20,6 +21,7 @@ if __name__ == "__main__":
         config = yaml.safe_load(f)
 
     logging.basicConfig(level=logging.INFO)
+    os.makedirs(args.output)
 
     
     tokenizer = Tokenizer(models.BPE())

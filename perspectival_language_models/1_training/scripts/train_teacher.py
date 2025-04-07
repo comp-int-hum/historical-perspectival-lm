@@ -50,14 +50,14 @@ if __name__ == "__main__":
     if config['training'].get('gpus', None) is not None:
         import os
         os.environ["CUDA_VISIBLE_DEVICES"] = config['training']['gpus']
-    #TODO: change back
+
     print(f"using {config['training']['gpus']} GPUs")
     train_tokens = len(train_dataset) * config['data']['seq_length']
     print(f"train_tokens = {train_tokens/10**6}M")
     full_eval_dataset = GBDataset(args.eval_data, config['data']['seq_length'], offset=0)
 
-    
-    eval_indices = sample(range(len(full_eval_dataset)), config['data']['eval_samples'])
+    eval_samples = min(config['data']['eval_samples'], len(full_eval_dataset))
+    eval_indices = sample(range(len(full_eval_dataset)), eval_samples)
     eval_dataset = Subset(full_eval_dataset, eval_indices)
 
     tokenizer = GPT2TokenizerFast.from_pretrained(args.tokenizer_path)

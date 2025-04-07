@@ -54,6 +54,10 @@ if __name__ == "__main__":
     print(torch.cuda.memory_summary())
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
+
+    if config['training'].get('gpus', None) is not None:
+        import os
+        os.environ["CUDA_VISIBLE_DEVICES"] = config['training']['gpus']
         
     tokenizer_path = args.tokenizer_path
     tokenizer = GPT2TokenizerFast.from_pretrained(tokenizer_path)
@@ -88,7 +92,8 @@ if __name__ == "__main__":
 
     token_count = len(train_dataset) * config['data']['seq_length']
 
-    eval_indices = sample(range(len(full_eval_dataset)), config['data']['eval_samples'])
+    eval_samples = min(config['data']['eval_samples'], len(full_eval_dataset))
+    eval_indices = sample(range(len(full_eval_dataset)), eval_samples)
     eval_dataset = Subset(full_eval_dataset, eval_indices)
 
 
