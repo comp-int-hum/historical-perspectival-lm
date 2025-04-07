@@ -65,7 +65,7 @@ Alternatively this is the description for a manual setup:
 ### Training On New Data (configuration)
 
 #### Prepare Data
-   To train models on your own data, place the text files into the [custom_data/]((perspectival_language_models/custom_data/) directory. For each category, include:
+   To train models on your own data, place the text files into the [custom_data/](perspectival_language_models/custom_data/) directory. For each category, include:
    
    - `data.train`
    - `data.dev`
