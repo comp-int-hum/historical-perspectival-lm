@@ -65,7 +65,7 @@ Alternatively this is the description for a manual setup:
 ### Training On New Data (configuration)
 
 #### Prepare Data
-   To train models on your own data, place the text files into the `custom_data/` directory. For each category, include:
+   To train models on your own data, place the text files into the [custom_data/]((perspectival_language_models/custom_data/) directory. For each category, include:
    
    - `data.train`
    - `data.dev`
@@ -95,7 +95,7 @@ in
 [custom.py](perspectival_language_models/custom.py).
 
 To change the model size or other training parameters, modify the relevant configuration files in `1_training/config` and reference them in 
-[1_training/custom_pretraining.py](perspectival_language_models/1_training/custom_pretraining.py), for example:
+[custom_pretraining.py](perspectival_language_models/1_training/custom_pretraining.py), for example:
 
 ```python
 # training configs
@@ -141,13 +141,13 @@ in
 [custom.py](perspectival_language_models/custom.py).
 
 You will need a local copy of the Gutenberg corpus; configure its path in 
-[0_data_preparation/custom_data_preparation.py](perspectival_language_models/0_data_preparation/custom_data_preparation.py):
+[custom_data_preparation.py](perspectival_language_models/0_data_preparation/custom_data_preparation.py):
 
 ```python
 GUTENBERG_PATH = "your_local_gutenberg_respository"
 ```
 
-A quantized Llama3 70B model was used to identify work dates. The results were stored in [0_data_preparation/data/gb_authors_dates_1950.jsonl](perspectival_language_models/0_data_preparation/data/gb_authors_dates_1950.jsonl). This file is not recomputed by default. To force a complete recomputation, set:
+A quantized Llama3 70B model was used to identify work dates. The results were stored in [gb_authors_dates_1950.jsonl](perspectival_language_models/0_data_preparation/data/gb_authors_dates_1950.jsonl). This file is not recomputed by default. To force a complete recomputation, set:
 
 ```python
 # Model and prompt settings
@@ -155,7 +155,7 @@ USE_DATES_FILE = False
 ```
 
 in 
-[0_data_preparation/custom_data_preparation.py](perspectival_language_models/0_data_preparation/custom_data_preparation.py).
+[custom_data_preparation.py](perspectival_language_models/0_data_preparation/custom_data_preparation.py).
 
 Alternatively, skip data preparation by directly loading the paper’s training data from `custom_data/historical_data`:
 
@@ -176,7 +176,7 @@ RUN_FINETUNING = True
 ```
 
 For finetuning on Llama3 8B, specify the local path in 
-[1_training/custom_finetuning.py](perspectival_language_models/1_training/custom_finetuning.py):
+[custom_finetuning.py](perspectival_language_models/1_training/custom_finetuning.py):
 
 ```python
 MODEL_PATH = "your_model_path"
