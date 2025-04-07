@@ -1,6 +1,6 @@
 # Perspectival Language Models
 
-_A brief description of what your project does and why it’s useful._
+Perspectival Language Models is the official codebase accompanying the paper “Pretraining Language Models for Diachronic Linguistic Change Discovery”. As part of this work, we offer a straightforward way to transfer the training pipeline to other text corpora for those interested in adapting our methods.
 
 ## Table of Contents
 
@@ -18,7 +18,6 @@ _A brief description of what your project does and why it’s useful._
   - [Start Run](#start-run)
 - [Contact](#contact)
 
----
 
 ## Installation
 
@@ -29,17 +28,13 @@ git clone https://github.com/comp-int-hum/historical-perspectival-lm.git
 ```
 
 ### Automatic Setup
-
-There is an automatic setup script you can run:
-
+For an installation of the required dependencies and evaluation harness please run the [setup.sh](setup.sh) script
 ```bash
 ./setup.sh
 ```
 
-This script installs all necessary dependencies, performs any required environment setup, and prepares your project to run.
-
 ### Manual Setup
-
+Alternatively this is the description for a manual setup:
 1. **Install dependencies**:
 
    ```bash
@@ -64,41 +59,43 @@ This script installs all necessary dependencies, performs any required environme
       cd ..
       ```
 
----
 
 ## Usage
 
 ### Training On New Data (configuration)
 
-1. **Prepare Data**  
-   To train models on your own data, place the text files into the `custom_data/` directory. For each category, include the following text files:
-
+#### Prepare Data
+   To train models on your own data, place the text files into the `custom_data/` directory. For each category, include:
+   
    - `data.train`
    - `data.dev`
    - `data.test`
 
-   An example can be seen in `custom_data/song_lyrics`, including the file `preprocessing.ipynb` for an example of how the data was preprocessed.
+   For example, see [custom_data/song_lyrics](perspectival_language_models/custom_data/song_lyrics), which also contains a preprocessing file ([preprocessing.ipynb](perspectival_language_models/custom_data/song_lyrics/preprocessing.ipynb)).
 
-2. **Customize Data Loading**  
-   Update the `custom.py` file to specify where the data is located:
+   Update 
+   [custom.py](perspectival_language_models/custom.py) 
+   to specify where the data is located:
    ```python
    # Data settings
    DATA = "LOAD_CUSTOM_DATA"  # set data loading method
    CUSTOM_DATA_DIRECTORY = "custom_data/song_lyrics"  # your custom data directory
    ```
 
-### Pretraining
+#### Pretraining
 
-If you want to run pretraining (according to the BabyLlama2 training recipe), set:
+To run pretraining (according to the BabyLlama2 training recipe), set:
 
 ```python
 # RUN settings
 RUN_PRETRAINING = True
 ```
 
-in `custom.py`.
+in 
+[custom.py](perspectival_language_models/custom.py).
 
-To change the model size and other training parameters, you can modify the configuration files in the `1_training/config` directory and then reference them in `1_training/custom_pretraining.py`:
+To change the model size or other training parameters, modify the relevant configuration files in `1_training/config` and reference them in 
+[1_training/custom_pretraining.py](perspectival_language_models/1_training/custom_pretraining.py), for example:
 
 ```python
 # training configs
@@ -107,7 +104,7 @@ TRAINER_CONFIG_2 = "1_training/config/llama-smoll-345M.yaml"
 STUDENT_CONFIG   = "1_training/config/llama-smoll-345M.yaml"
 ```
 
-### Finetuning
+#### Finetuning
 
 To fine-tune a model using DoRa, set:
 
@@ -116,20 +113,21 @@ To fine-tune a model using DoRa, set:
 RUN_FINETUNING = True
 ```
 
-in `custom.py`.
+in 
+[custom.py](perspectival_language_models/custom.py).
 
-You also need to specify the base model path and configuration. For instance:
+You also need to specify the base model path and configuration, for example:
 
 ```python
 DORA_LLAMA_CONFIG = "1_training/config/dora-llama8B.yaml"
 MODEL_PATH        = "your_model_path"
 ```
 
-If you use a model other than `llama3-8B`, you may need to update the configuration to target the correct modules.
+If you use a model other than `llama3-8B`, adjust the configuration to target the correct modules.
 
 ### Recreating Experiments (configuration)
 
-The pipeline is designed so that new models can be easily trained. Follow the steps below to recreate the results from the paper.
+Follow these steps to recreate the paper’s experiments.
 
 #### Data Preparation
 
@@ -139,24 +137,27 @@ To run the data preparation pipeline, set:
 DATA = "DATA_PREPARATION"
 ```
 
-in `custom.py`.
+in 
+[custom.py](perspectival_language_models/custom.py).
 
-This pipeline needs a local copy of the gutenberg corpus, which needs to be set in the `0_data_preparation/custom_data_preparation.py` file:
+You will need a local copy of the Gutenberg corpus; configure its path in 
+[0_data_preparation/custom_data_preparation.py](perspectival_language_models/0_data_preparation/custom_data_preparation.py):
+
 ```python
 GUTENBERG_PATH = "your_local_gutenberg_respository"
 ```
 
-A quantized Llama3 70B model was used to identify work dates (requiring two NVIDIA 3090s and ~1 day of processing). The results were stored in `0_data_preparation/data/gb_authors_dates_1950.jsonl`, and by default, this file is not recomputed.
+A quantized Llama3 70B model was used to identify work dates. The results were stored in `0_data_preparation/data/gb_authors_dates_1950.jsonl`. This file is not recomputed by default. To force a complete recomputation, set:
 
-To force a complete recomputation, set:
 ```python
 # Model and prompt settings
 USE_DATES_FILE = False
 ```
-in `0_data_preparation/custom_data_preparation.py`.
 
+in 
+[0_data_preparation/custom_data_preparation.py](perspectival_language_models/0_data_preparation/custom_data_preparation.py).
 
-Alternatively, the whole data preparation step can be skipped by directly loading the papers training data from the custom_data/historical_data directory:
+Alternatively, skip data preparation by directly loading the paper’s training data from `custom_data/historical_data`:
 
 ```python
 PROJECT_NAME = "historical"
@@ -164,37 +165,47 @@ DATA = "LOAD_CUSTOM_DATA"
 CUSTOM_DATA_DIRECTORY = "custom_data/historical_data"
 ```
 
-
 #### Training
 
-To train both the pretrained and finetuned models as in the paper, both run settings must be set to 'True' in the customs.py file:
+To train both the pretrained and finetuned models as in the paper, enable both in 
+[custom.py](perspectival_language_models/custom.py):
 
 ```python
 RUN_PRETRAINING = True
 RUN_FINETUNING = True
 ```
 
-For finetuning on Llama3 8B, a local path to the model should be provided in '1_training/custom_finetuning.py':
+For finetuning on Llama3 8B, specify the local path in 
+[1_training/custom_finetuning.py](perspectival_language_models/1_training/custom_finetuning.py):
+
 ```python
-MODEL_PATH        = "your_model_path"
+MODEL_PATH = "your_model_path"
 ```
+
 The paper used this Llama model: [meta-llama/Meta-Llama-3-8B](https://huggingface.co/meta-llama/Meta-Llama-3-8B)
 
 #### Evaluation
-The paper evaluated over BLiMP and the cloze task. Set these in the custom.py file:
+
+To replicate the paper’s evaluation on BLiMP and the cloze task, set:
+
 ```python
 RUN_EVALUATION = True
 EVALUATION_TASKS_LIST = ["blimp", "cloze_task_topk"]
 ```
 
-### Start run:
+in 
+[custom.py](perspectival_language_models/custom.py).
+
+### Start Run
+
 Once your data is prepared, you can start the training run locally by navigating to the `perspectival_language_models` directory and running:
 
 ```bash
 scons -Q
 ```
 
-To run via Slurm, adjust Slurm variables in `custom.py`:
+To run via Slurm, adjust Slurm variables in 
+[custom.py](perspectival_language_models/custom.py):
 
 ```python
 STEAMROLLER_ENGINE = 'slurm'
@@ -212,14 +223,10 @@ Then start the run with:
 scons -Q STEAMROLLER_ENGINE=slurm
 ```
 
-
----
-
 ## Contact
 
-For any questions or additional information, please reach out:
+For questions or additional information, feel free to reach out:
 
-- **Email**: elisabeth.fittschen@gmail.com
+- **Email**: elisabeth.fittschen@gmail.com  
 - **GitHub Issues**: [Open an issue](https://github.com/comp-int-hum/historical-perspectival-lm/issues)
 
----
