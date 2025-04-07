@@ -1,7 +1,3 @@
-Below is a cleaned-up and consistently formatted version of your README file. You can copy and paste it into your `README.md` to maintain a structured layout and clear instructions.
-
----
-
 # Perspectival Language Models
 
 _A brief description of what your project does and why it’s useful._
