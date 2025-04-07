@@ -227,6 +227,6 @@ scons -Q STEAMROLLER_ENGINE=slurm
 
 For questions or additional information, feel free to reach out:
 
-- **Email**: elisabeth.fittschen@gmail.com  
+- **Email**: elisabeth.fittschen@studium.uni-hamburg.de  
 - **GitHub Issues**: [Open an issue](https://github.com/comp-int-hum/historical-perspectival-lm/issues)
 
