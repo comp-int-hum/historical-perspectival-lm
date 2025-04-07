@@ -8,16 +8,14 @@ _A brief description of what your project does and why it’s useful._
   - [Automatic Setup](#automatic-setup)
   - [Manual Setup](#manual-setup)
 - [Usage](#usage)
-  - [Training On New Data](#training-on-new-data)
+  - [Training On New Data](#training-on-new-data-configuration)
     - [Pretraining](#pretraining)
     - [Finetuning](#finetuning)
-  - [Recreating Experiments](#recreating-experiments)
+  - [Recreating Experiments](#recreating-experiments-configuration)
     - [Data Preparation](#data-preparation)
     - [Training](#training)
     - [Evaluation](#evaluation)
   - [Start Run](#start-run)
-- [License](#license)
-- [Contributing](#contributing)
 - [Contact](#contact)
 
 ---
@@ -82,7 +80,7 @@ This script installs all necessary dependencies, performs any required environme
    An example can be seen in `custom_data/song_lyrics`, including the file `preprocessing.ipynb` for an example of how the data was preprocessed.
 
 2. **Customize Data Loading**  
-   Update the `custom.py` file to specify how your data should be loaded:
+   Update the `custom.py` file to specify where the data is located:
    ```python
    # Data settings
    DATA = "LOAD_CUSTOM_DATA"  # set data loading method
@@ -145,10 +143,10 @@ in `custom.py`.
 
 This pipeline needs a local copy of the gutenberg corpus, which needs to be set in the `0_data_preparation/custom_data_preparation.py` file:
 ```python
-GUTENBERG_PATH = "your_local_guttenberg_respository"
+GUTENBERG_PATH = "your_local_gutenberg_respository"
 ```
 
-During data “dating”, a quantized Llama3 70B model was used to identify work dates (requiring two NVIDIA 3090s and ~1 day of processing). The results were stored in `0_data_preparation/data/gb_authors_dates_1950.jsonl`, and by default, this file is not recomputed.
+A quantized Llama3 70B model was used to identify work dates (requiring two NVIDIA 3090s and ~1 day of processing). The results were stored in `0_data_preparation/data/gb_authors_dates_1950.jsonl`, and by default, this file is not recomputed.
 
 To force a complete recomputation, set:
 ```python
@@ -158,7 +156,7 @@ USE_DATES_FILE = False
 in `0_data_preparation/custom_data_preparation.py`.
 
 
-Alternatively, the whole data preparation step can be skipped by directly loading the papers training data from the custom_data file:
+Alternatively, the whole data preparation step can be skipped by directly loading the papers training data from the custom_data/historical_data directory:
 
 ```python
 PROJECT_NAME = "historical"
@@ -169,9 +167,12 @@ CUSTOM_DATA_DIRECTORY = "custom_data/historical_data"
 
 #### Training
 
-To train both the pretrained and finetuned models as in the paper, both run settings must be set to TRUE in the customs.py file:
+To train both the pretrained and finetuned models as in the paper, both run settings must be set to 'True' in the customs.py file:
+
+```python
 RUN_PRETRAINING = True
 RUN_FINETUNING = True
+```
 
 For finetuning on Llama3 8B, a local path to the model should be provided in '1_training/custom_finetuning.py':
 ```python
