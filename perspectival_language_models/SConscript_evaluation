@@ -1,0 +1,172 @@
+import os
+import os.path
+import json
+from utils.steamroller_utils import cpu_task_config, gpu_task_config
+from steamroller import Environment
+from collections import defaultdict
+
+
+vars = Variables("2_evaluation/custom_evaluation.py")
+vars.AddVariables(
+    # Work directory
+    ("ORIGINAL_WORK_DIR", "", "2_evaluation/work"),
+    ("WORK_DIR", "", "2_evaluation/work"),
+
+    # Random Seed
+    ("RANDOM_SEED", "", 42),
+
+    # Evaluation settings
+    ("MIN_OCCURRENCE_EVALUATION", "", 2),
+    ("EVALUATION_TASKS_LIST", "", ["blimp"]),
+    ("EVALUATE_TEACHERS", "", False),
+
+    # STEAMROLLER settings
+    ("STEAMROLLER_ENGINE", "", "slurm"),
+    ("CPU_QUEUE", "", "parallel"),
+    ("CPU_ACCOUNT", "", "tlippin1"),    
+    ("GPU_QUEUE", "", "a100"),
+    ("GPU_ACCOUNT", "", "tlippin1_gpu"),
+    ("GPU_COUNT", "", 1),
+    ("MEMORY", "", "64GB")
+)
+
+env = Environment(
+    variables=vars,
+    BUILDERS={
+        "BLIMP_to_CSV" : Builder(
+            action = (
+                "python 2_evaluation/scripts/blimp_to_csv.py "
+                "--blimp_directories ${SOURCES} "
+                "--blimp_identifiers ${IDENTIFIERS} "
+                "--output_directory ${TARGET}"
+            )
+        ),
+        "START_EVALUATION" : Builder(
+            action = (
+                "python 2_evaluation/scripts/start_evaluation.py "
+                "--model_dir ${SOURCES[0]} "
+                "--tasks ${TASK} "
+                "--output ${TARGET}"
+            )
+        ),
+        "FILTER_EVALUATION" : Builder(
+            action = (
+                "python 2_evaluation/scripts/filter_evaluation.py "
+                "--data ${SOURCES[1:]} "
+                "--evaluation_result ${SOURCES[0]} "
+                "--min_occurrence ${MIN_OCCURRENCE_EVALUATION} "
+                "--output ${TARGET} "
+            )
+        ),
+        "Calculate_Perplexity" : Builder(
+            action = (
+                "python 2_evaluation/scripts/calculate_perplexity.py "
+                "--model ${MODEL} "
+                "--split ${SPLIT} "
+                "--test_sets ${TEST_SETS} "
+                "--tokenizer ${TOKENIZER} "
+                "--test_splits ${TEST_SPLITS} "
+                "--output ${TARGET}"
+            )
+        ),
+        "CrossTimePerplexity" : Builder(
+            action = (
+                "python 2_evaluation/scripts/cross_time_perplexity.py "
+                "--models ${MODELS} "
+                "--test_sets ${TEST_SETS} "
+                "--tokenizers ${TOKENIZERS} "
+                "--time_data ${TIME_DATA} "
+                "--output ${TARGET}"
+            )
+        ),
+    }
+)
+
+Import("training_data")
+Import("pretrained_results")
+Import("finetuned_results")
+
+
+all_train_data = [slice["train"] for slice in training_data.values()]
+all_models = []
+
+
+for slice, data in training_data.items():
+    if slice in pretrained_results:
+        pretrained_models = pretrained_results[slice]
+        all_models.extend([
+            ("pretrained_student", pretrained_models["student"], slice, data, 
+            pretrained_models["tokenizer"])])
+        
+        if env["EVALUATE_TEACHERS"]:
+            all_models.extend([
+                ("pretrained_teacher_1", pretrained_models["teacher_1"], slice, data, 
+                pretrained_models["tokenizer"]), 
+                ("pretrained_teacher_2", pretrained_models["teacher_2"], slice, data, 
+                pretrained_models["tokenizer"]),
+            ])
+    if slice in finetuned_results:
+        finetuned_models = finetuned_results[slice]
+        all_models.extend([
+            ("finetuned_model", finetuned_models["model"], slice, data, finetuned_models["tokenizer"]),
+        ])
+
+
+all_evaluation_results = defaultdict(list)
+
+for model_name, model, slice, data, _ in all_models:
+    for task_name in env["EVALUATION_TASKS_LIST"]:
+        task_result = env.START_EVALUATION(
+            source = [model],
+            target = Dir(f"{env['WORK_DIR']}/{slice}/{model_name}/{task_name}"),
+            TASK = task_name,
+            **gpu_task_config(env,f"{model_name}_{task_name}", "01:30:00", "24GB")
+        )
+        filtered_result = env.FILTER_EVALUATION(
+            source = [task_result, data["train"]],
+            target = Dir(f"{env['WORK_DIR']}/{slice}/{model_name}/{task_name}_filtered"),
+            MIN_OCCURRENCE = env["MIN_OCCURRENCE_EVALUATION"],
+            **cpu_task_config(env,f"FILTER_{model_name}_{task_name}", "00:30:00", "24GB")
+        )
+        maximal_filtered_result = env.FILTER_EVALUATION(
+            source = [task_result, all_train_data],
+            target = Dir(f"{env['WORK_DIR']}/{slice}/{model_name}/{task_name}_maximal_filtered"),
+            MIN_OCCURRENCE = env["MIN_OCCURRENCE_EVALUATION"],
+            **cpu_task_config(env,f"MAX_FILTER_{model_name}_{task_name}", "00:30:00", "24GB")
+        )
+        all_evaluation_results[task_name].append((task_result, f"{model_name}_{slice}"))
+        all_evaluation_results[task_name].append((filtered_result, f"{model_name}_{slice}_filtered"))
+        all_evaluation_results[task_name].append((maximal_filtered_result, f"{model_name}_{slice}_maximal_filtered"))
+""""
+all_blimp, all_identifiers = [], []
+if "blimp" in all_evaluation_results:
+    all_blimp, all_identifiers = zip(*all_evaluation_results["blimp"])
+
+env.BLIMP_to_CSV(
+        source = all_blimp,
+        target = "${WORK_DIR}/combined_BLIMP_filtered/",
+        IDENTIFIERS = all_identifiers,
+        **cpu_task_config(env,"BLIMP_to_CSV", "00:30:00", "24GB")
+    )
+"""
+
+all_data_splits = list(training_data.keys())
+all_test_sets = [training_data[slice]["test"] for slice in all_data_splits]
+
+perplexities = {}
+for model_name, model, slice, data, tokenizer in all_models:
+    perplexities[(model_name, slice)] = env.Calculate_Perplexity(
+        source = [model, all_test_sets, tokenizer],
+        target = "${WORK_DIR}" +f"/{slice}/{model_name}/perplexities.json",
+        MODEL = model,
+        TOKENIZER = tokenizer,
+        SPLIT = slice,
+        TEST_SETS = all_test_sets,
+        TEST_SPLITS = all_data_splits,
+        **gpu_task_config(env,f"Perplexity_{slice}", "01:00:00", "48GB")
+    )
+
+
+
+
+

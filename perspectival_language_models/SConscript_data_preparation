@@ -1,0 +1,187 @@
+import os
+import os.path
+import json
+from utils.steamroller_utils import cpu_task_config, gpu_task_config
+from steamroller import Environment
+
+
+vars = Variables("0_data_preparation/custom_data_preparation.py")
+vars.AddVariables(
+    ("ORIGINAL_WORK_DIR", "", "0_data_preparation/work"),
+    ("WORK_DIR", "", "0_data_preparation/work"),
+    ("RANDOM_SEED", "", 42),
+    ("PG_CATALOG", "", "0_data_preparation/data/pg_catalog.csv"),
+    ("WORK_PROMPT", "", "0_data_preparation/data/work_date_prompt.txt"),
+
+    # local paths
+    ("DATA_ROOT", "", os.path.expanduser("~/corpora")),
+    ("GUTENBERG_PATH", "", "${DATA_ROOT}/gutenberg/"),
+
+    ("TIME_SLICES", "", [(1750, 1820), (1820, 1850), (1850, 1880), (1880, 1910), (1910, 1940)]),
+    
+    # Author and work filtering
+    ("P1_THRESH", "", 90),
+    ("P2_THRESH", "", 101),
+    ("BD_THRESH", "", 5),
+    ("OMIT_AUTHORS","",[]),
+    ("MAX_WORKS","", 20),
+
+    # Model and prompt settings
+    ("USE_INFERENCE", "", True),
+    ("USE_DATES_FILE", "", True),
+    ("DATES_FILE","", "0_data_preparation/data/gb_authors_dates_1950.jsonl"),
+    ("WORK_MODEL", "", "meta-llama/Llama-3.3-70B-Instruct"),
+
+    # Data split settings
+    ("TRAIN_PORTION", "", 10**7),
+    ("DEV_PORTION", "", 10**6),
+    ("TEST_PORTION", "", 5*(10**6)),
+    ("SPLIT_STYLE", "", "count"),
+    ("SPLIT_LEVEL", "", "paragraph"),
+
+    # Steamroller settings
+    ("STEAMROLLER_ENGINE", "", "slurm"),
+    ("CPU_QUEUE", "", "parallel"),
+    ("CPU_ACCOUNT", "", "tlippin1"),    
+    ("GPU_QUEUE", "", "a100"),
+    ("GPU_ACCOUNT", "", "tlippin1_gpu"),
+    ("GPU_COUNT", "", 1),
+    ("MEMORY", "", "64GB"),
+)
+
+env = Environment(
+    variables=vars,
+    BUILDERS={
+        "GenerateQuery" : Builder(
+              action="python 0_data_preparation/scripts/generate_query.py --output ${TARGET} --end_time ${MAX_CUTOFF}"
+        ),
+        "QueryWD" : Builder(
+              action="python 0_data_preparation/scripts/author_gather_metadata.py --sparql ${SOURCES} --output ${TARGETS}"
+        ),
+        "GBAuthorFuzzy": Builder(
+          action="python 0_data_preparation/scripts/author_gb_fuzzy.py "
+                 "--input ${SOURCES} --output ${TARGETS} "
+             "--pg_catalog ${PG_CATALOG} "
+             "--author_omit ${OMIT_AUTHORS} "
+             "--p1_thresh ${P1_THRESH} --p2_thresh ${P2_THRESH} --bd_thresh ${BD_THRESH} --random_state ${RANDOM_SEED}"
+        ),
+        "AttributeDates": Builder(
+            action="python 0_data_preparation/scripts/work_dates.py "
+            "--input ${SOURCES} --output ${TARGETS} "
+            "--model ${WORK_MODEL} --prompt ${WORK_PROMPT} --quant_4"
+        ),
+        "FilterAndSampleWorks": Builder(
+            action="python 0_data_preparation/scripts/sample_works.py "
+            "--input ${SOURCES} --output ${TARGETS} "
+            "--cutoff_start ${WORK_CUTOFF_START} "
+            "--cutoff_end ${WORK_CUTOFF_END} --max_works ${MAX_WORKS} --filter_birth_death"
+        ),
+
+        "ExtractAuthorWorksFromPG" : Builder(
+            action = (
+                   "python 0_data_preparation/scripts/extract_author_works_from_gutenberg.py "
+                "--input ${SOURCES} "
+                "--gutenberg_path ${GUTENBERG_PATH} "
+                "--output ${TARGETS}"
+            )
+   
+        ),
+        "ExtractDocStructures" : Builder(
+            action = (
+                "python 0_data_preparation/scripts/extract_doc_structures.py "
+                "--input ${SOURCES} "
+                "--output ${TARGETS}"
+            )
+        ),
+        "TrainingSplit" : Builder(
+            action = (
+                "python 0_data_preparation/scripts/train_test_val.py "
+                "--input ${SOURCES} "
+                "--output_train ${TARGETS[0]} "
+                "--output_dev ${TARGETS[1]} "
+                "--output_test ${TARGETS[2]} "
+                "--train_portion ${TRAIN_PORTION} "
+                "--dev_portion ${DEV_PORTION} "
+                "--test_portion ${TEST_PORTION} "
+                "--random_seed ${RANDOM_SEED} "
+                "--split_level ${SPLIT_LEVEL} "
+                "--split_style ${SPLIT_STYLE}"
+            )
+        ),
+    }
+)
+
+
+if not env["USE_DATES_FILE"]:
+    max_date = max([int(end) for (start, end) in env["TIME_SLICES"]])
+    input = env.GenerateQuery(   
+        source= None,
+        target = "${WORK_DIR}/authors.txt", 
+        MAX_CUTOFF = max_date,
+        **cpu_task_config(env,"GenerateQuery", "00:30:00", "4GB")
+    )
+    query_res = env.QueryWD(     
+        source = input, 
+        target = "${WORK_DIR}/author_query.jsonl", 
+        **cpu_task_config(env,"QueryWD", "00:30:00", "24GB")
+    )
+
+    gb_authors = env.GBAuthorFuzzy(
+        source = query_res, 
+        target = "${WORK_DIR}/gb_authors.jsonl", 
+        **cpu_task_config(env,"GBAuthorFuzzy", "00:30:00", "24GB")
+    )
+
+    if env["USE_INFERENCE"]:
+        gb_authors = env.AttributeDates(
+            source = gb_authors, 
+            target = "${WORK_DIR}/gb_authors_dates.jsonl", 
+            **gpu_task_config(env,"AttributeDates", "12:30:00", "24GB")
+        )
+else:
+    gb_authors = env.File(env["DATES_FILE"])
+
+generated_data = {}
+
+for time_slice in env["TIME_SLICES"]:
+    time_slice_directory = f"{time_slice[0]}_{time_slice[1]}"
+    env["WORK_DIR"] = os.path.join(env["ORIGINAL_WORK_DIR"], time_slice_directory)
+
+    gb_authors_filtered = env.FilterAndSampleWorks(  
+        source = gb_authors, 
+        target = "${WORK_DIR}/gb_authors_dates_filtered.jsonl",
+        WORK_CUTOFF_START = time_slice[0],
+        WORK_CUTOFF_END = time_slice[1],
+        **cpu_task_config(env,"FilterAndSampleWorks", "00:30:00", "24GB")
+    )
+
+    authors_and_extracted_works = env.ExtractAuthorWorksFromPG(
+        source = gb_authors_filtered,
+        target = "${WORK_DIR}/authors_and_extracted_works.jsonl",
+        **cpu_task_config(env, "ExtractAuthorWorksFromPG", "00:30:00", "24GB")
+    )
+
+    extracted_structures = env.ExtractDocStructures(
+        source = authors_and_extracted_works,
+        target = "${WORK_DIR}/extracted_structures.jsonl",
+        **cpu_task_config(env,"ExtractDocStructures", "00:30:00", "24GB")
+    )
+
+    train, dev, test = env.TrainingSplit(
+        source = extracted_structures,
+        target = ["${WORK_DIR}/data.train", "${WORK_DIR}/data.dev", "${WORK_DIR}/data.test"],
+        **cpu_task_config(env,"TrainingSplit", "00:30:00", "24GB")
+    )
+    generated_data[time_slice_directory] = {
+        "train": train,
+        "dev": dev,
+        "test": test
+    }
+    print(train, dev, test)
+print("Done generating data files.")
+print(generated_data)
+Export(
+        {
+            "training_data" : generated_data,
+        }
+    )

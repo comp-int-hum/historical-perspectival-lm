@@ -1,1 +1,6 @@
 .sconsign.dblite
+.venv
+.DS_Store
+wandb*
+work*
+__pycache__*
