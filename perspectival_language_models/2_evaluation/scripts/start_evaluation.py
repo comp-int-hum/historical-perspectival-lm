@@ -6,7 +6,7 @@ import os
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_dir", type=str, help="Directory containing the model files")
-    parser.add_argument("--tasks", type=str, nargs="+", default=["historical_minimal_pairs"], help="Tasks to evaluate")
+    parser.add_argument("--tasks", type=str, nargs="+", default=["blimp"], help="Tasks to evaluate")
     parser.add_argument("--output", type=str, help="Output file")
     args = parser.parse_args()
 

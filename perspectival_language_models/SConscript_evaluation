@@ -33,14 +33,6 @@ vars.AddVariables(
 env = Environment(
     variables=vars,
     BUILDERS={
-        "BLIMP_to_CSV" : Builder(
-            action = (
-                "python 2_evaluation/scripts/blimp_to_csv.py "
-                "--blimp_directories ${SOURCES} "
-                "--blimp_identifiers ${IDENTIFIERS} "
-                "--output_directory ${TARGET}"
-            )
-        ),
         "START_EVALUATION" : Builder(
             action = (
                 "python 2_evaluation/scripts/start_evaluation.py "
@@ -66,16 +58,6 @@ env = Environment(
                 "--test_sets ${TEST_SETS} "
                 "--tokenizer ${TOKENIZER} "
                 "--test_splits ${TEST_SPLITS} "
-                "--output ${TARGET}"
-            )
-        ),
-        "CrossTimePerplexity" : Builder(
-            action = (
-                "python 2_evaluation/scripts/cross_time_perplexity.py "
-                "--models ${MODELS} "
-                "--test_sets ${TEST_SETS} "
-                "--tokenizers ${TOKENIZERS} "
-                "--time_data ${TIME_DATA} "
                 "--output ${TARGET}"
             )
         ),
@@ -137,18 +119,7 @@ for model_name, model, slice, data, _ in all_models:
         all_evaluation_results[task_name].append((task_result, f"{model_name}_{slice}"))
         all_evaluation_results[task_name].append((filtered_result, f"{model_name}_{slice}_filtered"))
         all_evaluation_results[task_name].append((maximal_filtered_result, f"{model_name}_{slice}_maximal_filtered"))
-""""
-all_blimp, all_identifiers = [], []
-if "blimp" in all_evaluation_results:
-    all_blimp, all_identifiers = zip(*all_evaluation_results["blimp"])
 
-env.BLIMP_to_CSV(
-        source = all_blimp,
-        target = "${WORK_DIR}/combined_BLIMP_filtered/",
-        IDENTIFIERS = all_identifiers,
-        **cpu_task_config(env,"BLIMP_to_CSV", "00:30:00", "24GB")
-    )
-"""
 
 all_data_splits = list(training_data.keys())
 all_test_sets = [training_data[slice]["test"] for slice in all_data_splits]
