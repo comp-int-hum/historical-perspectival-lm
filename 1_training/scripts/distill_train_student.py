@@ -125,7 +125,7 @@ if __name__ == "__main__":
         output_dir=args.output_dir,
         overwrite_output_dir=True,
         save_strategy = "epoch",
-        evaluation_strategy = "epoch",
+        eval_strategy = "epoch",
         num_train_epochs=config['training']['num_epochs'],
         gradient_accumulation_steps=accumulation_steps,
         per_device_train_batch_size=per_device_bsz,

@@ -52,7 +52,7 @@ if __name__ == "__main__":
         output_dir="./results",
         overwrite_output_dir=True,
         save_strategy = "epoch",
-        evaluation_strategy = "epoch",
+        eval_strategy = "epoch",
         num_train_epochs=1,
         eval_accumulation_steps=32,
         gradient_accumulation_steps=1,

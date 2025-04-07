@@ -1,1 +1,0 @@
-When was the work {} by {} written? Answer just with the year.

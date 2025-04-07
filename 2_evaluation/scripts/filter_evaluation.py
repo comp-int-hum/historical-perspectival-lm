@@ -6,13 +6,25 @@ import math
 
 
 def mean(arr):
+    if len(arr) == 0:
+        print("Warning: empty array passed to mean, returning 0")
+        return 0
     return sum(arr) / len(arr)
 
 def sample_stddev(arr):
+    if len(arr) == 0:
+        print("Warning: empty array passed to sample_stddev, returning 0")
+        return 0
+    if len(arr) == 1:
+        print("Warning: only one element passed to sample_stddev, returning 0")
+        return 0
     mu = mean(arr)
     return math.sqrt(sum([(x - mu) ** 2 for x in arr]) / (len(arr) - 1))
 
 def mean_stderr(arr):
+    if len(arr) == 0:
+        print("Warning: empty array passed to mean_stderr, returning 0")
+        return 0
     return sample_stddev(arr) / math.sqrt(len(arr))
 
 
@@ -80,8 +92,8 @@ if __name__ == "__main__":
 
         results = json.load(open(os.path.join(args.evaluation_result, file), "r"))
         for task in results:
-            if "historical_cloze" in task_description:
-                text = " ".join(task["arguments"][0])
+            if "cloze_task_topk" in task_description:
+                text = " ".join(task["arguments"][1])
             else:
                 text = " ".join(task["arguments"][0]) + " " + " ".join(task["arguments"][1])
             text = text.lower()
