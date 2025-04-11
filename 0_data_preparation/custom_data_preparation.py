@@ -24,7 +24,9 @@ WORK_MODEL = "meta-llama/Llama-3.3-70B-Instruct"
 USE_DATES_FILE = True
 DATES_FILE ="0_data_preparation/data/gb_authors_dates_1950.jsonl"
 
-
+#dataset settings
+USE_CA = False
+CA_ROOT = "0_data_preparation/data/CA"
 
 # Data split settings
 TRAIN_PORTION = 10**7

@@ -26,6 +26,10 @@ vars.AddVariables(
     ("OMIT_AUTHORS","",[]),
     ("MAX_WORKS","", 20),
 
+    # CA data settings
+    ("USE_CA", "", False),
+    ("CA_ROOT", "", "0_data_preparation/data/CA"),
+
     # Model and prompt settings
     ("USE_INFERENCE", "", True),
     ("USE_DATES_FILE", "", True),
@@ -108,6 +112,26 @@ env = Environment(
                 "--split_style ${SPLIT_STYLE}"
             )
         ),
+        "CollateCA" : Builder(
+            action = (
+                "python 0_data_preparation/scripts/collate_ca.py "
+                "--input ${SOURCES} "
+                "--output ${TARGETS} "
+		"--cutoff_start ${WORK_CUTOFF_START} "
+                "--cutoff_end ${WORK_CUTOFF_END}"
+            )
+        ),
+        "CollateSplits" : Builder(
+            action = (
+                "python 0_data_preparation/scripts/collate_splits.py "
+                "--input_trains ${TRAINS} "
+                "--input_devs ${DEVS} "
+                "--input_tests ${TESTS} "
+                "--output_train ${TARGETS[0]} "
+                "--output_dev ${TARGETS[1]} "
+                "--output_test ${TARGETS[2]}"
+            )
+        ),
     }
 )
 
@@ -141,9 +165,18 @@ if not env["USE_DATES_FILE"]:
 else:
     gb_authors = env.File(env["DATES_FILE"])
 
+
+if env["USE_CA"]:
+    ca_train_orig = env.File(os.path.join(env["CA_ROOT"], "train.json"))
+    ca_test_orig = env.File(os.path.join(env["CA_ROOT"], "test.json"))
+    ca_dev_orig = env.File(os.path.join(env["CA_ROOT"], "dev.json"))
+
 generated_data = {}
 
 for time_slice in env["TIME_SLICES"]:
+    trains = []
+    devs = []
+    tests = []
     time_slice_directory = f"{time_slice[0]}_{time_slice[1]}"
     env["WORK_DIR"] = os.path.join(env["ORIGINAL_WORK_DIR"], time_slice_directory)
 
@@ -154,6 +187,24 @@ for time_slice in env["TIME_SLICES"]:
         WORK_CUTOFF_END = time_slice[1],
         **cpu_task_config(env,"FilterAndSampleWorks", "00:30:00", "24GB")
     )
+
+    if env["USE_CA"]:
+        ca_slice = env.CollateCA(
+            source = [ca_train_orig, ca_test_orig, ca_dev_orig],
+            target = "${WORK_DIR}/ca_slice.jsonl",
+            WORK_CUTOFF_START = time_slice[0],
+            WORK_CUTOFF_END = time_slice[1],
+            **cpu_task_config(env,"FilterAndSampleWorks", "00:30:00", "24GB")
+        )
+        ca_train, ca_dev, ca_test = env.TrainingSplit(
+            source = ca_slice,
+            target = ["${WORK_DIR}/ca.data.train", "${WORK_DIR}/ca.data.dev", "${WORK_DIR}/ca.data.test"],
+            **cpu_task_config(env,"TrainingSplit", "00:30:00", "24GB")
+        )
+        trains.append(ca_train)
+        devs.append(ca_dev)
+        tests.append(ca_test)
+
 
     authors_and_extracted_works = env.ExtractAuthorWorksFromPG(
         source = gb_authors_filtered,
@@ -167,11 +218,25 @@ for time_slice in env["TIME_SLICES"]:
         **cpu_task_config(env,"ExtractDocStructures", "00:30:00", "24GB")
     )
 
-    train, dev, test = env.TrainingSplit(
+    gb_train, gb_dev, gb_test = env.TrainingSplit(
         source = extracted_structures,
-        target = ["${WORK_DIR}/data.train", "${WORK_DIR}/data.dev", "${WORK_DIR}/data.test"],
+        target = ["${WORK_DIR}/gb.data.train", "${WORK_DIR}/gb.data.dev", "${WORK_DIR}/gb.data.test"],
         **cpu_task_config(env,"TrainingSplit", "00:30:00", "24GB")
     )
+    trains.append(gb_train)
+    devs.append(gb_dev)
+    tests.append(gb_test)
+
+    
+    train, dev, test = env.CollateSplits(
+        source = [trains,devs,tests],
+	TRAINS = trains,
+	DEVS = devs,
+	TESTS = tests,
+        target = ["${WORK_DIR}/data.train", "${WORK_DIR}/data.dev", "${WORK_DIR}/data.test"],
+        **cpu_task_config(env,"CollateSplits", "00:30:00", "24GB")
+    )
+    
     generated_data[time_slice_directory] = {
         "train": train,
         "dev": dev,

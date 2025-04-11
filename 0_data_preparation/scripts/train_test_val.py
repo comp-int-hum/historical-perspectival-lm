@@ -45,7 +45,6 @@ if __name__ == "__main__":
                         all_texts.append(" ".join(paragraph))
                 elif args.split_level == "chapter":
                     all_texts.append(" ".join([" ".join(paragraph) for paragraph in chapter]))
-    
 
     logging.info(f"Total {args.split_level}: {len(all_texts)}")
 
