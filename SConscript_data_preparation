@@ -198,7 +198,7 @@ for time_slice in env["TIME_SLICES"]:
         )
         ca_train, ca_dev, ca_test = env.TrainingSplit(
             source = ca_slice,
-            target = ["${WORK_DIR}/ca.data.train", "${WORK_DIR}/ca.data.dev", "${WORK_DIR}/ca.data.test"],
+            target = ["${WORK_DIR}/ca.data.train.json", "${WORK_DIR}/ca.data.dev.json", "${WORK_DIR}/ca.data.test.json"],
             **cpu_task_config(env,"TrainingSplit", "00:30:00", "24GB")
         )
         trains.append(ca_train)
@@ -220,7 +220,7 @@ for time_slice in env["TIME_SLICES"]:
 
     gb_train, gb_dev, gb_test = env.TrainingSplit(
         source = extracted_structures,
-        target = ["${WORK_DIR}/gb.data.train", "${WORK_DIR}/gb.data.dev", "${WORK_DIR}/gb.data.test"],
+        target = ["${WORK_DIR}/gb.data.train.json", "${WORK_DIR}/gb.data.dev.json", "${WORK_DIR}/gb.data.test.json"],
         **cpu_task_config(env,"TrainingSplit", "00:30:00", "24GB")
     )
     trains.append(gb_train)

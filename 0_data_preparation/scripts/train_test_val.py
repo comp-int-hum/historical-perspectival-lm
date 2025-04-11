@@ -27,6 +27,9 @@ if __name__ == "__main__":
 
 
     all_texts = []
+    texts_train = []
+    texts_dev = []
+    texts_test = []
             
 
     with open(args.input, "rt") as fin:
@@ -60,17 +63,9 @@ if __name__ == "__main__":
         logging.info(f"Dev size: {dev_size}")
         logging.info(f"Test size: {test_size}")
 
-        with open(args.output_train, "wt") as fout:
-            for sentence in all_texts[:train_size]:
-                fout.write(sentence + " ")
-    
-        with open(args.output_dev, "wt") as fout:
-            for sentence in all_texts[train_size:train_size+dev_size]:
-                fout.write(sentence + " ")
-
-        with open(args.output_test, "wt") as fout:
-            for sentence in all_texts[train_size+dev_size:]:
-                fout.write(sentence + " ")
+        texts_train = all_texts[:train_size]
+        texts_dev = all_texts[train_size:train_size+dev_size]
+        texts_test = all_texts[train_size+dev_size:]
 
     elif args.split_style == "count":
 
@@ -92,19 +87,19 @@ if __name__ == "__main__":
 
         t_c, train, leftover = get_n_tok_split(args.train_portion, all_texts)
         logging.info(f"Extracted {t_c} training tokens")
-        with open(args.output_train, "wt") as fout:
-            fout.write(" ".join(train))
+        texts_train = train
                   
         t_c, test, leftover = get_n_tok_split(args.test_portion, leftover)
         logging.info(f"Extracted {t_c} test tokens")
-        with open(args.output_test, "wt") as fout:
-            fout.write(" ".join(test))
+        texts_test = test
 
         t_c, dev, leftover = get_n_tok_split(args.dev_portion, leftover)
         logging.info(f"Extracted {t_c} dev tokens")
-        with open(args.output_dev, "wt") as fout:
-            fout.write(" ".join(dev))
-            
+        texts_dev = dev
+    
+    json.dump(texts_train, open(args.output_train, "wt"), indent=2)
+    json.dump(texts_dev, open(args.output_dev, "wt"), indent=2)
+    json.dump(texts_test, open(args.output_test, "wt"), indent=2)
     
     logging.info("Done")
     
