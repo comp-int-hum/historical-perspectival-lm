@@ -4,7 +4,7 @@ from custom import *
 # WandB settings
 WANDB_PROJECT = "perspectival_language_models_finetuning"
 
-WORK_DIR = f"1_training/work_finetuning/{PROJECT_NAME}"
+WORK_DIR = f"1_training/work/finetuning/{PROJECT_NAME}"
 ORIGINAL_WORK_DIR = WORK_DIR
 
 # training configs

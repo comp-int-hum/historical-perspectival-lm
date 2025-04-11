@@ -2,5 +2,5 @@
 .venv
 .DS_Store
 wandb*
-work*
+work/
 __pycache__*

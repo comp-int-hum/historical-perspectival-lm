@@ -4,7 +4,7 @@ from custom import *
 # WandB settings
 WANDB_PROJECT = "perspectival_language_models_pretraining"
 
-WORK_DIR = f"1_training/work_pretraining/{PROJECT_NAME}"
+WORK_DIR = f"1_training/work/pretraining/{PROJECT_NAME}"
 ORIGINAL_WORK_DIR = WORK_DIR
 
 # training configs
